@@ -1,0 +1,1408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Parth Tripathi</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<meta name="theme-color" content="#000000">
+<meta name="description" content="Parth Tripathi — web developer. Responsive, high-performance web apps with clean, maintainable code.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ground:#000;
+    --ink:#f2f2f2;
+    --muted:#9b9b9b;
+    --dim:#6e6e6e;
+    --nav-ink:#d9d9d9;
+    --hair:rgba(255,255,255,.09);
+    --glass:rgba(255,255,255,.045);
+    --shell:1480px;
+    /* one geometric sans throughout: light for display, wide-tracked for labels */
+    --display:"Jost",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    --ui:"Jost",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--ground);
+    color:var(--ink);
+    font-family:var(--ui);
+    font-weight:300;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  a{text-decoration:none;color:inherit}
+  ::selection{background:rgba(255,255,255,.16)}
+
+  .shell{max-width:var(--shell);margin:0 auto;padding-inline:clamp(20px,5vw,88px)}
+  main{position:relative;z-index:1}
+
+  /* ---------- navigation ---------- */
+  .nav{
+    position:sticky;
+    top:0;
+    z-index:20;
+    display:flex;
+    align-items:center;
+    gap:32px;
+    max-width:var(--shell);
+    margin:0 auto;
+    padding-inline:clamp(20px,5vw,88px);
+    padding-block:20px;
+    background:linear-gradient(to bottom, rgba(0,0,0,.5), rgba(0,0,0,0));
+    backdrop-filter:blur(6px);
+  }
+
+  /* The Spline robot. Its runtime writes inline width/height onto the canvas,
+     so sizing the canvas directly never holds. Instead the canvas is left at a
+     resolution the scene actually composes for and scaled down to a fixed box,
+     which is clipped -- that way the framing stays correct at any size. */
+  .bot{
+    /* crop controls -- see the transform note on .bot canvas below */
+    --bot-zoom:0.80;
+    --bot-x:-133px;
+    --bot-y:-28px;
+    position:relative;
+    width:92px;height:72px;
+    flex:0 0 auto;
+    margin-right:auto;          /* sits alone at the top left */
+    overflow:hidden;
+    /* belt and braces: even if the crop is a few px out, the bottom edge
+       fades instead of showing a hard slice through the platform */
+    -webkit-mask-image:linear-gradient(to bottom,#000 82%,transparent 100%);
+    mask-image:linear-gradient(to bottom,#000 82%,transparent 100%);
+    opacity:0;transition:opacity .7s ease;
+  }
+  .bot.ready{opacity:1}
+  .bot canvas{
+    position:absolute;top:0;left:0;
+    width:320px !important;   /* beats the runtime's inline style */
+    height:320px !important;
+    /* Head centre measured back from a clipped render: ~(0.70, 0.25) of the
+       canvas. translate = (36 - 320*scale*fx, 36 - 320*scale*fy), which for
+       The box is 92x72, not square, because the head is a landscape shape --
+       a square crop pinches its sides no matter where it is centred.
+       translate = (46 - 320*zoom*fx, 36 - 320*zoom*fy) with fx .70, fy .25.
+       At zoom .80 the head is ~50px wide inside 92px, so ~21px clear on each
+       side: wide enough that an error of +-0.06 in fx still cannot clip it.
+       --bot-* below are the only numbers to touch if it needs re-aiming. */
+    transform:translate(var(--bot-x), var(--bot-y)) scale(var(--bot-zoom));
+    transform-origin:top left;
+    display:block;
+  }
+
+  .nav__links{display:flex;align-items:center;gap:34px;font-size:11.5px;font-weight:300;letter-spacing:.2em;color:var(--nav-ink)}
+  .nav__links a{position:relative;padding-block:4px;transition:color .18s ease}
+  .nav__links a::after{
+    content:"";position:absolute;left:0;bottom:0;height:1px;width:0;
+    background:currentColor;transition:width .25s ease;
+  }
+  .nav__links a:hover{color:#fff}
+  .nav__links a:hover::after{width:100%}
+
+  .nav__right{display:flex;align-items:center;gap:26px;margin-left:auto}
+  .nav__cta{
+    background:#1f1f1f;border:1px solid var(--hair);color:#fff;
+    font-size:11.5px;font-weight:300;letter-spacing:.14em;text-transform:uppercase;padding:9px 20px;border-radius:999px;
+    transition:background .18s ease;
+  }
+  .nav__cta:hover{background:#2c2c2c}
+
+  /* ---------- hero ---------- */
+  .hero{
+    position:relative;
+    min-height:calc(100svh - 72px);
+    display:flex;
+    align-items:center;
+    gap:48px;
+    max-width:var(--shell);
+    margin:0 auto;
+    padding-inline:clamp(20px,5vw,88px);
+    padding-bottom:4vh;
+  }
+
+  /* The raking sweeps. Fixed to the viewport and owned by <body>, not the
+     hero, so one light covers every section and there is no rectangle edge
+     where the hero used to clip it. */
+  .ambient{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+
+  /* A lamp that trails the pointer, lifting the grey wherever you are.
+     Deliberately weak -- it should read as the page catching light, not as a
+     spotlight chasing the cursor. */
+  .cursorlight{
+    position:absolute;top:0;left:0;
+    width:560px;height:560px;
+    margin:-280px 0 0 -280px;
+    border-radius:50%;
+    background:radial-gradient(circle, rgba(255,241,205,.06) 0%, rgba(255,235,185,.024) 38%, transparent 68%);
+    opacity:0;
+    transition:opacity .6s ease;
+    will-change:transform;
+  }
+  .sweep{
+    position:absolute;
+    width:240%;height:240%;
+    left:-70%;top:-70%;
+    will-change:transform;
+  }
+  .sweep--a{
+    background:linear-gradient(99deg, transparent 45%, rgba(255,255,255,.055) 51%, transparent 58%);
+    animation:driftA 19s ease-in-out infinite alternate;
+  }
+  .sweep--b{
+    background:linear-gradient(94deg, transparent 54%, rgba(255,255,255,.028) 60%, transparent 67%);
+    animation:driftB 27s ease-in-out infinite alternate;
+  }
+  .sweep--pool{
+    background:radial-gradient(38% 36% at 66% 44%, rgba(255,255,255,.05), transparent 72%);
+    animation:driftPool 23s ease-in-out infinite alternate;
+  }
+  @keyframes driftA   { from{transform:translate3d(-11%,-7%,0)} to{transform:translate3d(11%,7%,0)} }
+  @keyframes driftB   { from{transform:translate3d(9%,6%,0)}    to{transform:translate3d(-9%,-6%,0)} }
+  @keyframes driftPool{ from{transform:translate3d(-3%,-2%,0)}  to{transform:translate3d(3%,2%,0)} }
+
+  .copy{position:relative;z-index:2;flex:1 1 auto;max-width:36rem}
+
+  h1{
+    font-family:var(--display);
+    font-weight:600;
+    font-size:clamp(2.7rem,5.8vw,5.2rem);
+    line-height:1.04;
+    letter-spacing:-.02em;
+    margin:0 0 24px;
+    background:linear-gradient(176deg,#fff 22%,#8e8e8e 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    text-wrap:balance;
+  }
+  .caret{
+    display:inline-block;width:.035em;height:.78em;margin-left:.06em;
+    background:#fff;vertical-align:baseline;
+    animation:blink 1.05s steps(1) infinite;
+  }
+  @keyframes blink{50%{opacity:0}}
+
+  .sub{
+    font-weight:300;
+    margin:0 0 32px;
+    font-size:clamp(1rem,1.2vw,1.12rem);
+    line-height:1.68;color:#ababab;max-width:44ch;
+  }
+
+  .actions{display:flex;align-items:center;gap:26px;flex-wrap:wrap;margin-top:32px}
+  .btn{
+    background:#1c1c1c;border:1px solid var(--hair);color:#fff;
+    font:inherit;font-size:11.5px;font-weight:300;letter-spacing:.16em;text-transform:uppercase;
+    padding:14px 26px;border-radius:2px;
+    cursor:pointer;transition:background .18s ease, transform .18s ease;
+  }
+  .btn:hover{background:#292929;transform:translateY(-1px)}
+  .link{color:#cfcfcf;font-size:11.5px;font-weight:300;letter-spacing:.16em;text-transform:uppercase;display:inline-flex;align-items:center;gap:8px}
+  .link:hover{color:#fff}
+
+  .stage{
+    position:relative;z-index:1;flex:0 0 auto;
+    width:min(48vw,700px);height:min(38vw,530px);
+    filter:grayscale(1);
+    opacity:0;transform:scale(.86);
+    animation:rise 1.7s cubic-bezier(.16,1,.3,1) .15s forwards;
+  }
+  .stage canvas{display:block;width:100%;height:100%}
+  @keyframes rise{to{opacity:1;transform:scale(1)}}
+
+  /* ---------- section furniture ---------- */
+  .section{position:relative;padding-block:clamp(72px,10vw,132px)}
+  /* the divider that used to sit beside the section labels */
+  .rule{
+    position:relative;
+    height:1px;border:0;margin:0 0 22px;
+    background:linear-gradient(90deg, rgba(210,222,255,.30), rgba(255,255,255,.05) 60%, transparent);
+    box-shadow:0 0 10px rgba(188,204,255,.18);
+  }
+  /* a lit cap on the leading edge -- blurred, so it reads as the line
+     catching light rather than as a separate drawn element */
+  .rule::before{
+    content:"";
+    position:absolute;left:0;top:-1.5px;
+    width:46px;height:4px;border-radius:3px;
+    background:rgba(200,215,255,.5);
+    filter:blur(3px);
+  }
+
+  h2{
+    font-family:var(--display);font-weight:200;
+    font-size:clamp(1.8rem,3.1vw,2.7rem);line-height:1.12;letter-spacing:-.015em;
+    margin:0 0 12px;
+  }
+  .lede{margin:0;color:var(--muted);font-size:.95rem;font-weight:300;max-width:46ch;line-height:1.6}
+
+  /* ---------- tech capsule ---------- */
+  .techlabel{margin:0 0 15px;font-size:10.5px;font-weight:300;letter-spacing:.24em;text-transform:uppercase;color:var(--dim)}
+  .techbar{
+    position:relative;
+    width:min(100%,510px);
+    border-radius:999px;
+    background:var(--glass);
+    border:1px solid rgba(255,255,255,.10);
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+    overflow:hidden;
+    /* a whisper of light on the rim. The faint cool cast is what makes it
+       read as a glow rather than a plain drop shadow -- pure white at this
+       opacity just looks like haze. */
+    --tint-rgb:188,204,255;          /* replaced per-logo on hover */
+    box-shadow:
+      0 0 14px rgba(188,204,255,.075),
+      inset 0 0 12px rgba(188,204,255,.035);
+    transition:background .35s ease, border-color .35s ease, box-shadow .35s ease;
+  }
+  /* same pointer-tracked sheen the project cards use */
+  .techbar::before{
+    content:"";position:absolute;inset:0;z-index:2;pointer-events:none;
+    background:radial-gradient(200px circle at var(--mx,50%) var(--my,50%), rgba(255,255,255,.08), transparent 62%);
+    opacity:0;transition:opacity .35s ease;
+  }
+  .techbar:hover{
+    background:rgba(255,255,255,.07);
+    border-color:rgba(255,255,255,.2);
+    box-shadow:
+      0 0 18px rgba(188,204,255,.10),
+      inset 0 0 16px rgba(188,204,255,.05),
+      0 16px 46px rgba(0,0,0,.42);
+  }
+  /* The tint is carried as raw channels, not a hex, so the same value can be
+     reused at several opacities without color-mix support. */
+  .techbar.is-tinted{
+    background:rgba(var(--tint-rgb),.028);   /* fill stays faint on purpose */
+    border-color:rgba(var(--tint-rgb),.30);
+    box-shadow:
+      0 0 22px rgba(var(--tint-rgb),.14),
+      inset 0 0 16px rgba(var(--tint-rgb),.035),
+      0 16px 46px rgba(0,0,0,.42);
+  }
+  .techbar:hover::before{opacity:1}
+  .techbar__fade{
+    padding-block:11px;
+    overflow:hidden;
+    -webkit-mask-image:linear-gradient(90deg,transparent,#000 13%,#000 87%,transparent);
+    mask-image:linear-gradient(90deg,transparent,#000 13%,#000 87%,transparent);
+  }
+  /* Spacing lives on the items, not as flex gap: with a gap the two runs are
+     not exactly half the track width and the wrap point shows a seam.
+     Scrolling is driven in JS so hover can ease the speed down instead of
+     halting -- animation-duration cannot be transitioned without jumping. */
+  .track{display:flex;width:max-content;will-change:transform}
+  .track img{
+    width:30px;height:30px;object-fit:contain;flex:0 0 auto;
+    margin-right:26px;
+    filter:grayscale(1) brightness(1.45);
+    opacity:.5;
+    transition:filter .4s ease, opacity .4s ease, transform .25s ease;
+  }
+  .techbar:hover .track img{filter:none;opacity:1}
+  .track img:hover{transform:translateY(-4px) scale(1.14)}
+
+  /* ---------- projects: glass cards ---------- */
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(330px,1fr));
+    gap:26px;margin-top:44px;
+  }
+  .card{
+    position:relative;
+    display:flex;flex-direction:column;
+    background:var(--glass);
+    border:1px solid rgba(255,255,255,.07);
+    border-radius:18px;
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+    padding:18px 18px 22px;
+    overflow:hidden;
+    transition:transform .35s cubic-bezier(.16,1,.3,1), background .35s ease, border-color .35s ease, box-shadow .35s ease;
+  }
+  /* the sheen that tracks the pointer */
+  .card::before{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(240px circle at var(--mx,50%) var(--my,0%), rgba(255,255,255,.09), transparent 62%);
+    opacity:0;transition:opacity .35s ease;
+  }
+  .card:hover{transform:translateY(-4px);border-color:rgba(255,255,255,.14)}
+  .card:hover::before{opacity:1}
+  .card--blue:hover  {background:rgba(167,184,199,.085);box-shadow:0 20px 60px rgba(32,101,165,.16)}
+  .card--purple:hover{background:rgba(203,189,209,.085);box-shadow:0 20px 60px rgba(147,35,164,.16)}
+  .card--white:hover {background:rgba(248,248,246,.075);box-shadow:0 20px 60px rgba(255,255,255,.09)}
+  .card--teal:hover  {background:rgba(160,205,196,.08); box-shadow:0 20px 60px rgba(28,150,128,.15)}
+  .card--amber:hover {background:rgba(214,196,164,.08); box-shadow:0 20px 60px rgba(180,120,40,.15)}
+
+  .card__shot{
+    position:relative;width:100%;aspect-ratio:16/10;
+    border-radius:11px;overflow:hidden;
+    background:#0d0d0d;border:1px solid rgba(255,255,255,.06);
+  }
+  .card__shot img{
+    width:100%;height:100%;object-fit:cover;display:block;
+    filter:grayscale(.55) contrast(1.02);
+    transition:filter .4s ease, transform .5s cubic-bezier(.16,1,.3,1);
+  }
+  .card:hover .card__shot img{filter:none;transform:scale(1.035)}
+
+  .card__title{
+    font-size:1.24rem;font-weight:400;letter-spacing:-.015em;line-height:1.28;
+    margin:18px 0 10px;
+  }
+  .card__desc{margin:0 0 20px;font-size:.88rem;font-weight:300;line-height:1.65;color:var(--muted);flex:1 1 auto}
+
+  .card__foot{display:flex;align-items:center;justify-content:space-between;gap:14px}
+  .stack{display:flex;align-items:center;gap:9px}
+  .stack img{width:19px;height:19px;object-fit:contain;filter:grayscale(1) brightness(1.7);opacity:.6}
+  .card:hover .stack img{filter:none;opacity:1}
+  .live{
+    font-size:10px;font-weight:300;letter-spacing:.14em;text-transform:uppercase;color:#dcdcdc;
+    display:inline-flex;align-items:center;gap:6px;white-space:nowrap;
+    border:1px solid var(--hair);border-radius:999px;padding:6px 13px;
+    transition:background .2s ease,border-color .2s ease;
+  }
+  .live:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.2)}
+  .live svg{width:11px;height:11px}
+
+  /* ---------- stats ---------- */
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px;margin-top:40px}
+  .stat{
+    position:relative;
+    overflow:hidden;
+    background:var(--glass);
+    border:1px solid rgba(255,255,255,.07);
+    border-radius:18px;
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    padding:28px 26px;
+    transition:border-color .3s ease, background .3s ease;
+  }
+  .stat:hover{border-color:rgba(255,255,255,.15);background:rgba(255,255,255,.06)}
+  /* brand mark bled into the card: blurred hard so it reads as a glow, not a logo */
+  .stat__mark{
+    position:absolute;
+    right:-18px;bottom:-24px;
+    width:168px;height:168px;
+    background-image:url("data:image/svg+xml;base64,PHN2ZyByb2xlPSJpbWciIGZpbGw9IiNGRkExMTYiIHZpZXdCb3g9IjAgMCAyNCAyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48dGl0bGU+TGVldENvZGU8L3RpdGxlPjxwYXRoIGQ9Ik0xMy40ODMgMGExLjM3NCAxLjM3NCAwIDAgMC0uOTYxLjQzOEw3LjExNiA2LjIyNmwtMy44NTQgNC4xMjZhNS4yNjYgNS4yNjYgMCAwIDAtMS4yMDkgMi4xMDQgNS4zNSA1LjM1IDAgMCAwLS4xMjUuNTEzIDUuNTI3IDUuNTI3IDAgMCAwIC4wNjIgMi4zNjIgNS44MyA1LjgzIDAgMCAwIC4zNDkgMS4wMTcgNS45MzggNS45MzggMCAwIDAgMS4yNzEgMS44MThsNC4yNzcgNC4xOTMuMDM5LjAzOGMyLjI0OCAyLjE2NSA1Ljg1MiAyLjEzMyA4LjA2My0uMDc0bDIuMzk2LTIuMzkyYy41NC0uNTQuNTQtMS40MTQuMDAzLTEuOTU1YTEuMzc4IDEuMzc4IDAgMCAwLTEuOTUxLS4wMDNsLTIuMzk2IDIuMzkyYTMuMDIxIDMuMDIxIDAgMCAxLTQuMjA1LjAzOGwtLjAyLS4wMTktNC4yNzYtNC4xOTNjLS42NTItLjY0LS45NzItMS40NjktLjk0OC0yLjI2M2EyLjY4IDIuNjggMCAwIDEgLjA2Ni0uNTIzIDIuNTQ1IDIuNTQ1IDAgMCAxIC42MTktMS4xNjRMOS4xMyA4LjExNGMxLjA1OC0xLjEzNCAzLjIwNC0xLjI3IDQuNDMtLjI3OGwzLjUwMSAyLjgzMWMuNTkzLjQ4IDEuNDYxLjM4NyAxLjk0LS4yMDdhMS4zODQgMS4zODQgMCAwIDAtLjIwNy0xLjk0M2wtMy41LTIuODMxYy0uOC0uNjQ3LTEuNzY2LTEuMDQ1LTIuNzc0LTEuMjAybDIuMDE1LTIuMTU4QTEuMzg0IDEuMzg0IDAgMCAwIDEzLjQ4MyAwem0tMi44NjYgMTIuODE1YTEuMzggMS4zOCAwIDAgMC0xLjM4IDEuMzgyIDEuMzggMS4zOCAwIDAgMCAxLjM4IDEuMzgySDIwLjc5YTEuMzggMS4zOCAwIDAgMCAxLjM4LTEuMzgyIDEuMzggMS4zOCAwIDAgMC0xLjM4LTEuMzgyeiIvPjwvc3ZnPg==");
+    background-position:center;
+    background-size:contain;
+    background-repeat:no-repeat;
+    filter:blur(9px) grayscale(1);
+    opacity:.16;
+    pointer-events:none;
+    transition:opacity .45s ease, filter .45s ease;
+  }
+  .stat:hover .stat__mark{opacity:.34;filter:blur(7px) grayscale(0)}
+  .stat > *:not(.stat__mark):not(.stat__ring){position:relative;z-index:1}
+
+  /* Difficulty split drawn around the card's own edge. pathLength="100"
+     renormalises the rect's perimeter to 100 units, so a segment's dash
+     length IS its percentage -- no measuring the path, and it stays correct
+     at any card size. */
+  .stat__ring{
+    position:absolute;inset:0;
+    width:100%;height:100%;
+    pointer-events:none;z-index:2;
+  }
+  .stat__ring rect{
+    fill:none;
+    stroke-width:2;
+    stroke-linecap:butt;
+    stroke-dasharray:0 100;          /* nothing drawn until hovered */
+    transition:stroke-dasharray 1.1s cubic-bezier(.16,1,.3,1), filter .5s ease;
+  }
+  /* `color` is set alongside `stroke` purely so drop-shadow's currentColor
+     picks up each segment's own hue for the glow */
+  /* magenta -- the one hue not already spoken for by a card tint or a
+     difficulty band */
+  .stat__mark--hack{background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2Q5NmFhNiI+PHBhdGggZD0iTTcgM2gxMHY1YTUgNSAwIDAgMS0xMCAwVjN6Ii8+PHBhdGggZD0iTTUgNC41SDIuNlY3YTQuNiA0LjYgMCAwIDAgNC40IDQuNlY5LjVBMi41IDIuNSAwIDAgMSA1IDcuMVY0LjV6Ii8+PHBhdGggZD0iTTE5IDQuNWgyLjRWN2E0LjYgNC42IDAgMCAxLTQuNCA0LjZWOS41QTIuNSAyLjUgMCAwIDAgMTkgNy4xVjQuNXoiLz48cGF0aCBkPSJNMTEgMTMuMmgyVjE3aDMuMnYyLjJINy44VjE3SDExdi0zLjh6Ii8+PC9zdmc+")}
+  .ring--hack  {stroke:#d96aa6;color:#d96aa6;transition-delay:.04s}
+
+  .ring--easy  {stroke:#5ec9a7;color:#5ec9a7;transition-delay:.02s}
+  .ring--medium{stroke:#d6b45c;color:#d6b45c;transition-delay:.16s}
+  .ring--hard  {stroke:#d4735e;color:#d4735e;transition-delay:.30s}
+
+  .stat:hover .stat__ring rect{
+    stroke-dasharray:var(--len,0) 100;
+    filter:drop-shadow(0 0 5px currentColor);
+  }
+
+  .stat__num{
+    font-family:var(--display);font-weight:200;
+    font-size:3.4rem;line-height:1;letter-spacing:-.02em;
+    font-variant-numeric:tabular-nums;
+  }
+  .stat__label{margin-top:12px;font-size:10.5px;font-weight:300;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+  .bars{margin-top:20px;display:flex;flex-direction:column;gap:9px}
+  .bar{display:grid;grid-template-columns:62px 1fr auto;align-items:center;gap:11px;font-size:.76rem;color:var(--dim)}
+  .bar__track{height:3px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden}
+  .bar__fill{
+    height:100%;width:0;border-radius:2px;
+    background:rgba(255,255,255,.24);
+    transition:width 1.1s cubic-bezier(.16,1,.3,1), background .45s ease;
+  }
+  .stat:hover .bar--easy   .bar__fill{background:#5ec9a7}
+  .stat:hover .bar--medium .bar__fill{background:#d6b45c}
+  .stat:hover .bar--hard   .bar__fill{background:#d4735e}
+  .bar b{color:#cfcfcf;font-weight:450;font-variant-numeric:tabular-nums}
+
+  /* ---------- footer ---------- */
+  .foot{
+    border-top:1px solid var(--hair);
+    margin-top:40px;padding-block:34px;
+    display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;
+    font-size:.85rem;color:var(--dim);
+  }
+  .foot a:hover{color:#fff}
+
+  /* reveal on scroll */
+  .reveal{opacity:0;transform:translateY(18px);transition:opacity .8s ease, transform .8s cubic-bezier(.16,1,.3,1)}
+  .reveal.in{opacity:1;transform:none}
+
+  @media (max-width:1100px){ .nav__links{display:none} }
+  @media (max-width:980px){
+    .hero{flex-direction:column;justify-content:center;text-align:center;gap:14px;padding-block:24px 56px}
+    .copy{max-width:100%;order:2}
+    .actions{justify-content:center}
+    .stage{order:1;width:min(92vw,560px);height:min(70vw,420px)}
+  }
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto}
+    .stage,.sweep,.track,.caret{animation:none}
+    .stage{opacity:1;transform:none}
+    .reveal{opacity:1;transform:none;transition:none}
+  }
+</style>
+</head>
+<body>
+
+<div class="ambient" aria-hidden="true">
+  <div class="sweep sweep--a"></div>
+  <div class="sweep sweep--b"></div>
+  <div class="sweep sweep--pool"></div>
+  <div class="cursorlight" id="cursorlight"></div>
+</div>
+
+<header class="nav">
+  <div class="bot" id="botbox"><canvas id="bot" aria-hidden="true"></canvas></div>
+  <div class="nav__right">
+    <nav class="nav__links">
+      <a href="#top">ABOUT</a>
+      <a href="#projects">PROJECTS</a>
+      <a href="#stats">STATS</a>
+    </nav>
+    <a class="nav__cta" href="https://drive.google.com/file/d/12gB80BOqlTa3NIi_B1DyzXlG1F7WZ3qg/view?usp=sharing" target="_blank" rel="noopener">Résumé</a>
+  </div>
+</header>
+
+<section class="hero" id="top">
+  <div class="copy">
+    <h1><span id="type"></span><span class="caret" aria-hidden="true"></span></h1>
+    <p class="sub">A web developer passionate about crafting responsive, high-performance web apps with clean, maintainable code.</p>
+
+    <p class="techlabel">Tech I have worked with</p>
+    <div class="techbar">
+      <div class="techbar__fade"><div class="track" id="track"></div></div>
+    </div>
+
+    <div class="actions">
+      <a class="btn" href="#projects">View projects</a>
+      <a class="link" href="https://leetcode.com/u/Parth_Tripathi2409/" target="_blank" rel="noopener">
+        LeetCode
+        <svg viewBox="0 0 12 12" fill="none" aria-hidden="true" width="11" height="11"><path d="M3 9L9 3M9 3H4.5M9 3v4.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
+  </div>
+
+  <div class="stage" id="stage" aria-label="Rotating 3D cube" role="img"></div>
+</section>
+
+<main>
+  <section class="section shell" id="projects">
+    <hr class="rule reveal">
+    <h2 class="reveal">Projects I've designed and built</h2>
+    <p class="lede reveal">Five things I shipped, each live and open to poke at.</p>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <section class="section shell" id="stats">
+    <hr class="rule reveal">
+    <h2 class="reveal">Practice and competition</h2>
+    <div class="stats">
+      <div class="stat reveal">
+        <div class="stat__mark" aria-hidden="true"></div>
+        <svg class="stat__ring" id="lc-ring" aria-hidden="true" preserveAspectRatio="none">
+          <rect class="ring--easy"   pathLength="100"></rect>
+          <rect class="ring--medium" pathLength="100"></rect>
+          <rect class="ring--hard"   pathLength="100"></rect>
+        </svg>
+        <div class="stat__num" id="lc-count">0</div>
+        <div class="stat__label">LeetCode problems solved</div>
+        <div class="bars" id="lc-bars">
+          <div class="bar bar--easy"><span>Easy</span><div class="bar__track"><div class="bar__fill" id="f-easy"></div></div><b id="n-easy">–</b></div>
+          <div class="bar bar--medium"><span>Medium</span><div class="bar__track"><div class="bar__fill" id="f-medium"></div></div><b id="n-medium">–</b></div>
+          <div class="bar bar--hard"><span>Hard</span><div class="bar__track"><div class="bar__fill" id="f-hard"></div></div><b id="n-hard">–</b></div>
+        </div>
+      </div>
+      <div class="stat reveal">
+        <div class="stat__mark stat__mark--hack" aria-hidden="true"></div>
+        <svg class="stat__ring" aria-hidden="true" preserveAspectRatio="none">
+          <rect class="ring--hack" pathLength="100" style="--len:99"></rect>
+        </svg>
+        <div class="stat__num" id="hk-count">0</div>
+        <div class="stat__label">Hackathons attended</div>
+      </div>
+    </div>
+
+    <div class="foot">
+      <span>© <span id="year"></span> Parth Tripathi</span>
+      <span>
+        <a href="https://leetcode.com/u/Parth_Tripathi2409/" target="_blank" rel="noopener">LeetCode</a>
+        &nbsp;·&nbsp;
+        <a href="https://drive.google.com/file/d/12gB80BOqlTa3NIi_B1DyzXlG1F7WZ3qg/view?usp=sharing" target="_blank" rel="noopener">Résumé</a>
+      </span>
+    </div>
+  </section>
+</main>
+
+<script>
+const ICONS = {"cpp":"data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTI4IDEyOCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cGF0aCBmaWxsPSIjMDA1OTljIiBkPSJNMTE4Ljc2NiA5NS44MmMuODktMS41NDMgMS40NDEtMy4yOCAxLjQ0MS00Ljg0M1YzNi43OGMwLTEuNTU4LS41NS0zLjI5Ny0xLjQ0MS00Ljg0bC01NS4zMiAzMS45NFptMCAwIi8+CiAgPHBhdGggZmlsbD0iIzAwNDQ4MiIgZD0ibTY4LjM2IDEyNi41ODYgNDYuOTMzLTI3LjA5NGMxLjM1Mi0uNzgxIDIuNTgyLTIuMTI5IDMuNDczLTMuNjcybC01NS4zMi0zMS45NEw4LjEyIDk1LjgyYy44OSAxLjU0MyAyLjEyMSAyLjg5IDMuNDczIDMuNjcybDQ2LjkzMyAyNy4wOTRjMi43MDMgMS41NjIgNy4xMyAxLjU2MiA5LjgzMiAwWm0wIDAiLz4KICA8cGF0aCBmaWxsPSIjNjU5YWQyIiBkPSJNMTE4Ljc2NiAzMS45NDFjLS44OTEtMS41NDYtMi4xMjEtMi44OTQtMy40NzMtMy42NzFMNjguMzU5IDEuMTcyYy0yLjcwMy0xLjU2My03LjEyOS0xLjU2My05LjgzMiAwTDExLjU5NCAyOC4yN0M4Ljg5IDI5LjgyOCA2LjY4IDMzLjY2IDYuNjggMzYuNzh2NTQuMTk2YzAgMS41NjIuNTUgMy4zIDEuNDQxIDQuODQzTDYzLjQ0NSA2My44OFptMCAwIi8+CiAgPHBhdGggZmlsbD0iI2ZmZiIgZD0iTTYzLjQ0NSAyNi4wMzVjLTIwLjg2NyAwLTM3Ljg0MyAxNi45NzctMzcuODQzIDM3Ljg0NHMxNi45NzYgMzcuODQ0IDM3Ljg0MyAzNy44NDRjMTMuNDY1IDAgMjYuMDI0LTcuMjQ3IDMyLjc3LTE4LjkxTDc5Ljg0IDczLjMzNWMtMy4zOCA1Ljg0LTkuNjYgOS40NjUtMTYuMzk1IDkuNDY1LTEwLjQzMyAwLTE4LjkyMi04LjQ4OC0xOC45MjItMTguOTIyIDAtMTAuNDM0IDguNDktMTguOTIyIDE4LjkyMi0xOC45MjIgNi43MyAwIDEzLjAxNyAzLjYyOSAxNi4zOSA5LjQ2NWwxNi4zOC05LjQ3N2MtNi43NS0xMS42NjQtMTkuMzA1LTE4LjkxLTMyLjc3LTE4Ljkxek05Mi44OCA1Ny41N3Y0LjIwN2gtNC4yMDd2NC4yMDNoNC4yMDd2NC4yMDdoNC4yMDNWNjUuOThoNC4yMDN2LTQuMjAzaC00LjIwM1Y1Ny41N0g5Mi44OHptMTUuNzY2IDB2NC4yMDdoLTQuMjA0djQuMjAzaDQuMjA0djQuMjA3aDQuMjA3VjY1Ljk4aDQuMjAzdi00LjIwM2gtNC4yMDNWNTcuNTdoLTQuMjA3eiIvPgo8L3N2Zz4K","css3":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjggMTI4Ij48cGF0aCBmaWxsPSIjMTU3MkI2IiBkPSJNMTguODE0IDExNC4xMjNMOC43NiAxLjM1MmgxMTAuNDhsLTEwLjA2NCAxMTIuNzU0LTQ1LjI0MyAxMi41NDMtNDUuMTE5LTEyLjUyNnoiLz48cGF0aCBmaWxsPSIjMzNBOURDIiBkPSJNNjQuMDAxIDExNy4wNjJsMzYuNTU5LTEwLjEzNiA4LjYwMS05Ni4zNTRoLTQ1LjE2djEwNi40OXoiLz48cGF0aCBmaWxsPSIjZmZmIiBkPSJNNjQuMDAxIDUxLjQyOWgxOC4zMDJsMS4yNjQtMTQuMTYzSDY0LjAwMVYyMy40MzVoMzQuNjgybC0uMzMyIDMuNzExLTMuNCAzOC4xMTRoLTMwLjk1VjUxLjQyOXoiLz48cGF0aCBmaWxsPSIjRUJFQkVCIiBkPSJNNjQuMDgzIDg3LjM0OWwtLjA2MS4wMTgtMTUuNDAzLTQuMTU5LS45ODUtMTEuMDMxSDMzLjc1MmwxLjkzNyAyMS43MTcgMjguMzMxIDcuODYzLjA2My0uMDE4di0xNC4zOXoiLz48cGF0aCBmaWxsPSIjZmZmIiBkPSJNODEuMTI3IDY0LjY3NWwtMS42NjYgMTguNTIyLTE1LjQyNiA0LjE2NHYxNC4zOWwyOC4zNTQtNy44NTguMjA4LTIuMzM3IDIuNDA2LTI2Ljg4MUg4MS4xMjd6Ii8+PHBhdGggZmlsbD0iI0VCRUJFQiIgZD0iTTY0LjA0OCAyMy40MzV2MTMuODMxSDMwLjY0bC0uMjc3LTMuMTA4LS42My03LjAxMi0uMzMxLTMuNzExaDM0LjY0NnptLS4wNDcgMjcuOTk2djEzLjgzMUg0OC43OTJsLS4yNzctMy4xMDgtLjYzMS03LjAxMi0uMzMtMy43MTFoMTYuNDQ3eiIvPjwvc3ZnPg==","html5":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjggMTI4Ij48cGF0aCBmaWxsPSIjRTQ0RDI2IiBkPSJNOS4wMzIgMmwxMC4wMDUgMTEyLjA5MyA0NC44OTYgMTIuNDAxIDQ1LjAyLTEyLjM4N0wxMTguOTY4IDJIOS4wMzJ6bTg5LjEyNiAyNi41MzlsLS42MjcgNy4xNzJMOTcuMjU1IDM5SDQ0LjU5bDEuMjU3IDE0aDUwLjE1NmwtLjMzNiAzLjQ3MS0zLjIzMyAzNi4xMTktLjIzOCAyLjI3TDY0IDEwMi42MDl2LjAwMmwtLjAzNC4wMTgtMjguMTc3LTcuNDIzTDMzLjg3NiA3NGgxMy44MTVsLjk3OSAxMC45MTlMNjMuOTU3IDg5SDY0di0uNTQ2bDE1LjM1NS0zLjg3NUw4MC45NTkgNjdIMzMuMjYxbC0zLjM4My0zOC4xMTdMMjkuNTQ5IDI1aDY4LjkzOWwtLjMzIDMuNTM5eiIvPjwvc3ZnPg==","java":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjggMTI4Ij48cGF0aCBmaWxsPSIjMDA3NEJEIiBkPSJNNDcuNjE3IDk4LjEycy00Ljc2NyAyLjc3NCAzLjM5NyAzLjcxYzkuODkyIDEuMTMgMTQuOTQ3Ljk2OCAyNS44NDUtMS4wOTIgMCAwIDIuODcxIDEuNzk1IDYuODczIDMuMzUxLTI0LjQzOSAxMC40Ny01NS4zMDgtLjYwNy0zNi4xMTUtNS45Njl6bS0yLjk4OC0xMy42NjVzLTUuMzQ4IDMuOTU5IDIuODIzIDQuODA1YzEwLjU2NyAxLjA5MSAxOC45MSAxLjE4IDMzLjM1NC0xLjYgMCAwIDEuOTkzIDIuMDI1IDUuMTMyIDMuMTMxLTI5LjU0MiA4LjY0LTYyLjQ0Ni42OC00MS4zMDktNi4zMzZ6Ii8+PHBhdGggZmlsbD0iI0VBMkQyRSIgZD0iTTY5LjgwMiA2MS4yNzFjNi4wMjUgNi45MzUtMS41OCAxMy4xNy0xLjU4IDEzLjE3czE1LjI4OS03Ljg5MSA4LjI2OS0xNy43NzdjLTYuNTU5LTkuMjE1LTExLjU4Ny0xMy43OTIgMTUuNjM1LTI5LjU4IDAgLjAwMS00Mi43MzEgMTAuNjctMjIuMzI0IDM0LjE4N3oiLz48cGF0aCBmaWxsPSIjMDA3NEJEIiBkPSJNMTAyLjEyMyAxMDguMjI5czMuNTI5IDIuOTEtMy44ODggNS4xNTljLTE0LjEwMiA0LjI3Mi01OC43MDYgNS41Ni03MS4wOTQuMTcxLTQuNDUxLTEuOTM4IDMuODk5LTQuNjI1IDYuNTI2LTUuMTkyIDIuNzM5LS41OTMgNC4zMDMtLjQ4NSA0LjMwMy0uNDg1LTQuOTUzLTMuNDg3LTMyLjAxMyA2Ljg1LTEzLjc0MyA5LjgxNSA0OS44MjEgOC4wNzYgOTAuODE3LTMuNjM3IDc3Ljg5Ni05LjQ2OHpNNDkuOTEyIDcwLjI5NHMtMjIuNjg2IDUuMzg5LTguMDMzIDcuMzQ4YzYuMTg4LjgyOCAxOC41MTguNjM4IDMwLjAxMS0uMzI2IDkuMzktLjc4OSAxOC44MTMtMi40NzQgMTguODEzLTIuNDc0cy0zLjMwOCAxLjQxOS01LjcwNCAzLjA1M2MtMjMuMDQyIDYuMDYxLTY3LjU0NCAzLjIzOC01NC43MzEtMi45NTggMTAuODMyLTUuMjM5IDE5LjY0NC00LjY0MyAxOS42NDQtNC42NDN6bTQwLjY5NyAyMi43NDdjMjMuNDIxLTEyLjE2NyAxMi41OTEtMjMuODYgNS4wMzItMjIuMjg1LTEuODQ4LjM4NS0yLjY3Ny43Mi0yLjY3Ny43MnMuNjg4LTEuMDc5IDItMS41NDNjMTQuOTUzLTUuMjU1IDI2LjQ1MSAxNS41MDMtNC44MjMgMjMuNzI1IDAtLjAwMi4zNTktLjMyNy40NjgtLjYxN3oiLz48cGF0aCBmaWxsPSIjRUEyRDJFIiBkPSJNNzYuNDkxIDEuNTg3Uzg5LjQ1OSAxNC41NjMgNjQuMTg4IDM0LjUxYy0yMC4yNjYgMTYuMDA2LTQuNjIxIDI1LjEzLS4wMDcgMzUuNTU5LTExLjgzMS0xMC42NzMtMjAuNTA5LTIwLjA3LTE0LjY4OC0yOC44MTVDNTguMDQxIDI4LjQyIDgxLjcyMiAyMi4xOTUgNzYuNDkxIDEuNTg3eiIvPjxwYXRoIGZpbGw9IiMwMDc0QkQiIGQ9Ik01Mi4yMTQgMTI2LjAyMWMyMi40NzYgMS40MzcgNTctLjggNTcuODE3LTExLjQzNiAwIDAtMS41NzEgNC4wMzItMTguNTc3IDcuMjMxLTE5LjE4NiAzLjYxMi00Mi44NTQgMy4xOTEtNTYuODg3Ljg3NCAwIC4wMDEgMi44NzUgMi4zODEgMTcuNjQ3IDMuMzMxeiIvPjwvc3ZnPg==","javascript":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjggMTI4Ij48cGF0aCBmaWxsPSIjRjBEQjRGIiBkPSJNMiAxdjEyNWgxMjVWMUgyem02Ni4xMTkgMTA2LjUxM2MtMS44NDUgMy43NDktNS4zNjcgNi4yMTItOS40NDggNy40MDEtNi4yNzEgMS40NC0xMi4yNjkuNjE5LTE2LjczMS0yLjA1OS0yLjk4Ni0xLjgzMi01LjMxOC00LjY1Mi02LjkwMS03LjkwMWw5LjUyLTUuODNjLjA4My4wMzUuMzMzLjQ4Ny42NjcgMS4wNzEgMS4yMTQgMi4wMzQgMi4yNjEgMy40NzQgNC4zMTkgNC40ODUgMi4wMjIuNjkgNi40NjEgMS4xMzEgOC4xNzUtMi40MjcgMS4wNDctMS44MS43MTQtNy42MjguNzE0LTE0LjA2NUM1OC40MzMgNzguMDczIDU4LjQ4IDY4IDU4LjQ4IDU4aDExLjcwOWMwIDExIC4wNiAyMS40MTggMCAzMi4xNTIuMDI1IDYuNTguNTk2IDEyLjQ0Ni0yLjA3IDE3LjM2MXptNDguNTc0LTMuMzA4Yy00LjA3IDEzLjkyMi0yNi43NjIgMTQuMzc0LTM1LjgzIDUuMTc2LTEuOTE2LTIuMTY1LTMuMTE3LTMuMjk2LTQuMjYtNS43OTUgNC44MTktMi43NzIgNC44MTktMi43NzIgOS41MDgtNS40ODUgMi41NDcgMy45MTUgNC45MDIgNi4wNjggOS4xMzkgNi45NDkgNS43NDguNzAyIDExLjUzMS0xLjI3MyAxMC4yMzQtNy4zNzgtMS4zMzMtNC45ODYtMTEuNzctNi4xOTktMTguODczLTExLjUzMS03LjIxMS00Ljg0My04LjkwMS0xNi42MTEtMi45NzUtMjMuMzM1IDEuOTc1LTIuNDg3IDUuMzQzLTQuMzQzIDguODc3LTUuMjM1bDMuNjg4LS40NzdjNy4wODEtLjE0MyAxMS41MDcgMS43MjcgMTQuNzU2IDUuMzU1LjkwNC45MTYgMS42NDIgMS45MDQgMy4wMjIgNC4wNDUtMy43NzIgMi40MDQtMy43NiAyLjM4MS05LjE2MyA1Ljg3OS0xLjE1NC0yLjQ4Ni0zLjA2OS00LjA0Ni01LjA5My00LjcyNC0zLjE0Mi0uOTUyLTcuMTA0LjA4My03LjkyNiAzLjQwMy0uMjg1IDEuMDIzLS4yMjYgMS45NzUuMjI3IDMuNjY1IDEuMjczIDIuOTAzIDUuNTQ1IDQuMTY1IDkuMzc3IDUuOTI2IDExLjAzMSA0LjQ3NCAxNC43NTYgOS4yNzEgMTUuNjcyIDE0Ljk4MS44ODIgNC45MTYtLjIxMyA4LjEwNS0uMzggOC41ODF6Ii8+PC9zdmc+","mongodb":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjggMTI4Ij48cGF0aCBmaWxsLXJ1bGU9ImV2ZW5vZGQiIGNsaXAtcnVsZT0iZXZlbm9kZCIgZmlsbD0iIzQzOTkzNCIgZD0iTTg4LjAzOCA0Mi44MTJjMS42MDUgNC42NDMgMi43NjEgOS4zODMgMy4xNDEgMTQuMjk2LjQ3MiA2LjA5NS4yNTYgMTIuMTQ3LTEuMDI5IDE4LjE0Mi0uMDM1LjE2NS0uMTA5LjMyLS4xNjQuNDgtLjQwMy4wMDEtLjgxNC0uMDQ5LTEuMjA4LjAxMi0zLjMyOS41MjMtNi42NTUgMS4wNjUtOS45ODEgMS42MDQtMy40MzguNTU3LTYuODgxIDEuMDkyLTEwLjMxMyAxLjY4Ny0xLjIxNi4yMS0yLjcyMS0uMDQxLTMuMjEyIDEuNjQxLS4wMTQuMDQ2LS4xNTQuMDU0LS4yMzUuMDhsLjE2Ni0xMC4wNTEtLjE2OS0yNC4yNTIgMS42MDItLjI3NWMyLjYyLS40MjkgNS4yNC0uODY0IDcuODYyLTEuMjgxIDMuMTI5LS40OTcgNi4yNjEtLjk4IDkuMzkyLTEuNDY1IDEuMzgxLS4yMTUgMi43NjQtLjQxMiA0LjE0OC0uNjE4eiIvPjxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgY2xpcC1ydWxlPSJldmVub2RkIiBmaWxsPSIjNDVBNTM4IiBkPSJNNjEuNzI5IDExMC4wNTRjLTEuNjktMS40NTMtMy40MzktMi44NDItNS4wNTktNC4zNy04LjcxNy04LjIyMi0xNS4wOTMtMTcuODk5LTE4LjIzMy0yOS41NjYtLjg2NS0zLjIxMS0xLjQ0Mi02LjQ3NC0xLjYyNy05Ljc5Mi0uMTMtMi4zMjItLjMxOC00LjY2NS0uMTU0LTYuOTc1LjQzNy02LjE0NCAxLjMyNS0xMi4yMjkgMy4xMjctMTguMTQ3bC4wOTktLjEzOGMuMTc1LjIzMy40MjcuNDM5LjUxNi43MDIgMS43NTkgNS4xOCAzLjUwNSAxMC4zNjQgNS4yNDIgMTUuNTUxIDUuNDU4IDE2LjMgMTAuOTA5IDMyLjYwNCAxNi4zNzYgNDguOS4xMDcuMzE4LjM4NC41NzkuNTgzLjg2NmwtLjg3IDIuOTY5eiIvPjxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgY2xpcC1ydWxlPSJldmVub2RkIiBmaWxsPSIjNDZBMDM3IiBkPSJNODguMDM4IDQyLjgxMmMtMS4zODQuMjA2LTIuNzY4LjQwMy00LjE0OS42MTYtMy4xMzEuNDg1LTYuMjYzLjk2OC05LjM5MiAxLjQ2NS0yLjYyMi40MTctNS4yNDIuODUyLTcuODYyIDEuMjgxbC0xLjYwMi4yNzUtLjAxMi0xLjA0NWMtLjA1My0uODU5LS4xNDQtMS43MTctLjE1NC0yLjU3Ni0uMDY5LTUuNDc4LS4xMTItMTAuOTU2LS4xOC0xNi40MzQtLjA0Mi0zLjQyOS0uMTA1LTYuODU3LS4xNzUtMTAuMjg1LS4wNDMtMi4xMy0uMDg5LTQuMjYxLS4xODUtNi4zODgtLjA1Mi0xLjE0My0uMjM2LTIuMjgtLjMxMS0zLjQyMy0uMDQyLS42NTcuMDE2LTEuMzE5LjAyOS0xLjk3OS44MTcgMS41ODMgMS42MTYgMy4xNzggMi40NTYgNC43NDkgMS4zMjcgMi40ODQgMy40NDEgNC4zMTQgNS4zNDQgNi4zMTEgNy41MjMgNy44OTIgMTIuODY0IDE3LjA2OCAxNi4xOTMgMjcuNDMzeiIvPjxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgY2xpcC1ydWxlPSJldmVub2RkIiBmaWxsPSIjNDA5NDMzIiBkPSJNNjUuMDM2IDgwLjc1M2MuMDgxLS4wMjYuMjIyLS4wMzQuMjM1LS4wOC40OTEtMS42ODIgMS45OTYtMS40MzEgMy4yMTItMS42NDEgMy40MzItLjU5NCA2Ljg3NS0xLjEzIDEwLjMxMy0xLjY4NyAzLjMyNi0uNTM5IDYuNjUyLTEuMDgxIDkuOTgxLTEuNjA0LjM5NC0uMDYyLjgwNS0uMDExIDEuMjA4LS4wMTItLjYyMiAyLjIyLTEuMTEyIDQuNDg4LTEuOTAxIDYuNjQ3LS44OTYgMi40NDktMS45OCA0LjgzOS0zLjEzMSA3LjE4MmE0OS4xNDIgNDkuMTQyIDAgMDEtNi4zNTMgOS43NjNjLTEuOTE5IDIuMzA4LTQuMDU4IDQuNDQxLTYuMjAyIDYuNTQ4LTEuMTg1IDEuMTY1LTIuNTgyIDIuMTE0LTMuODgyIDMuMTYxbC0uMzM3LS4yMy0xLjIxNC0xLjAzOC0xLjI1Ni0yLjc1M2E0MS40MDIgNDEuNDAyIDAgMDEtMS4zOTQtOS44MzhsLjAyMy0uNTYxLjE3MS0yLjQyNmMuMDU3LS44MjguMTMzLTEuNjU1LjE2OC0yLjQ4NS4xMjktMi45ODIuMjQxLTUuOTY0LjM1OS04Ljk0NnoiLz48cGF0aCBmaWxsLXJ1bGU9ImV2ZW5vZGQiIGNsaXAtcnVsZT0iZXZlbm9kZCIgZmlsbD0iIzRGQUE0MSIgZD0iTTY1LjAzNiA4MC43NTNjLS4xMTggMi45ODItLjIzIDUuOTY0LS4zNTcgOC45NDctLjAzNS44My0uMTExIDEuNjU3LS4xNjggMi40ODVsLS43NjUuMjg5Yy0xLjY5OS01LjAwMi0zLjM5OS05Ljk1MS01LjA2Mi0xNC45MTMtMi43NS04LjIwOS01LjQ2Ny0xNi40MzEtOC4yMTMtMjQuNjQyYTQ0OTguODg3IDQ0OTguODg3IDAgMDAtNi43LTE5Ljg2N2MtLjEwNS0uMzEtLjQwNy0uNTUyLS42MTctLjgyNmw0Ljg5Ni05LjAwMmMuMTY4LjI5Mi4zOS41NjUuNDk2Ljg3OWE2MTY3LjQ3NiA2MTY3LjQ3NiAwIDAxNi43NjggMjAuMTE4YzIuOTE2IDguNzMgNS44MTQgMTcuNDY3IDguNzI4IDI2LjE5OC4xMTYuMzQ5LjMwOC42NzEuNDkxIDEuMDYybC42Ny0uNzgtLjE2NyAxMC4wNTJ6Ii8+PHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGZpbGw9IiM0QUE3M0MiIGQ9Ik00My4xNTUgMzIuMjI3Yy4yMS4yNzQuNTExLjUxNi42MTcuODI2YTQ0OTguODg3IDQ0OTguODg3IDAgMDE2LjcgMTkuODY3YzIuNzQ2IDguMjExIDUuNDYzIDE2LjQzMyA4LjIxMyAyNC42NDIgMS42NjIgNC45NjEgMy4zNjIgOS45MTEgNS4wNjIgMTQuOTEzbC43NjUtLjI4OS0uMTcxIDIuNDI2LS4xNTUuNTU5Yy0uMjY2IDIuNjU2LS40OSA1LjMxOC0uODE0IDcuOTY4LS4xNjMgMS4zMjgtLjUwOSAyLjYzMi0uNzcyIDMuOTQ3LS4xOTgtLjI4Ny0uNDc2LS41NDgtLjU4My0uODY2LTUuNDY3LTE2LjI5Ny0xMC45MTgtMzIuNi0xNi4zNzYtNDguOWEzODg4Ljk3MiAzODg4Ljk3MiAwIDAwLTUuMjQyLTE1LjU1MWMtLjA4OS0uMjYzLS4zNC0uNDY5LS41MTYtLjcwMmwzLjI3Mi04Ljg0eiIvPjxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgY2xpcC1ydWxlPSJldmVub2RkIiBmaWxsPSIjNTdBRTQ3IiBkPSJNNjUuMjAyIDcwLjcwMmwtLjY3Ljc4Yy0uMTgzLS4zOTEtLjM3NS0uNzE0LS40OTEtMS4wNjItMi45MTMtOC43MzEtNS44MTItMTcuNDY4LTguNzI4LTI2LjE5OGE2MTY3LjQ3NiA2MTY3LjQ3NiAwIDAwLTYuNzY4LTIwLjExOGMtLjEwNS0uMzE0LS4zMjctLjU4OC0uNDk2LS44NzlsNi4wNTUtNy45NjVjLjE5MS4yNTUuNDYzLjQ4Mi41NjIuNzY5IDEuNjgxIDQuOTIxIDMuMzQ3IDkuODQ4IDUuMDAzIDE0Ljc3OCAxLjU0NyA0LjYwNCAzLjA3MSA5LjIxNSA0LjYzNiAxMy44MTMuMTA1LjMwOC40Ny41MjYuNzE0Ljc4NmwuMDEyIDEuMDQ1Yy4wNTggOC4wODIuMTE1IDE2LjE2Ny4xNzEgMjQuMjUxeiIvPjxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgY2xpcC1ydWxlPSJldmVub2RkIiBmaWxsPSIjNjBCMjRGIiBkPSJNNjUuMDIxIDQ1LjQwNGMtLjI0NC0uMjYtLjYwOS0uNDc4LS43MTQtLjc4Ni0xLjU2NS00LjU5OC0zLjA4OS05LjIwOS00LjYzNi0xMy44MTMtMS42NTYtNC45My0zLjMyMi05Ljg1Ni01LjAwMy0xNC43NzgtLjA5OS0uMjg3LS4zNzEtLjUxNC0uNTYyLS43NjkgMS45NjktMS45MjggMy44NzctMy45MjUgNS45MjUtNS43NjQgMS44MjEtMS42MzQgMy4yODUtMy4zODYgMy4zNTItNS45NjguMDAzLS4xMDcuMDU5LS4yMTQuMTQ1LS41MTRsLjUxOSAxLjMwNmMtLjAxMy42NjEtLjA3MiAxLjMyMi0uMDI5IDEuOTc5LjA3NSAxLjE0My4yNTkgMi4yOC4zMTEgMy40MjMuMDk2IDIuMTI3LjE0MiA0LjI1OC4xODUgNi4zODguMDY5IDMuNDI4LjEzMiA2Ljg1Ni4xNzUgMTAuMjg1LjA2NyA1LjQ3OC4xMTEgMTAuOTU2LjE4IDE2LjQzNC4wMDguODYxLjA5OCAxLjcxOC4xNTIgMi41Nzd6Ii8+PHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGZpbGw9IiNBOUFBODgiIGQ9Ik02Mi41OTggMTA3LjA4NWMuMjYzLTEuMzE1LjYwOS0yLjYyLjc3Mi0zLjk0Ny4zMjUtMi42NDkuNTQ4LTUuMzEyLjgxNC03Ljk2OGwuMDY2LS4wMS4wNjYuMDExYTQxLjQwMiA0MS40MDIgMCAwMDEuMzk0IDkuODM4Yy0uMTc2LjIzMi0uNDI1LjQzOS0uNTE4LjcwMS0uNzI3IDIuMDUtMS40MTIgNC4xMTYtMi4xNDMgNi4xNjYtLjEuMjgtLjM3OC40OTgtLjU3NC43NDRsLS43NDctMi41NjYuODctMi45Njl6Ii8+PHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGZpbGw9IiNCNkI1OTgiIGQ9Ik02Mi40NzYgMTEyLjYyMWMuMTk2LS4yNDYuNDc1LS40NjQuNTc0LS43NDQuNzMxLTIuMDUgMS40MTctNC4xMTUgMi4xNDMtNi4xNjYuMDkzLS4yNjIuMzQxLS40NjkuNTE4LS43MDFsMS4yNTUgMi43NTRjLS4yNDguMzUyLS41OS42NjktLjcyOCAxLjA2MWwtMi40MDQgNy4wNTljLS4wOTkuMjgzLS40MzcuNDgzLS42NjMuNzIybC0uNjk1LTMuOTg1eiIvPjxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgY2xpcC1ydWxlPSJldmVub2RkIiBmaWxsPSIjQzJDMUE3IiBkPSJNNjMuMTcxIDExNi42MDVjLjIyNy0uMjM4LjU2NC0uNDM5LjY2My0uNzIybDIuNDA0LTcuMDU5Yy4xMzctLjM5MS40OC0uNzA5LjcyOC0xLjA2MWwxLjIxNSAxLjAzN2MtLjU4Ny41OC0uOTEzIDEuMjUtLjcxNyAyLjA5N2wtLjM2OSAxLjIwOGMtLjE2OC4yMDctLjQxMS4zODctLjQ5NC42MjQtLjgzOSAyLjQwMy0xLjY0IDQuODE5LTIuNDg1IDcuMjIyLS4xMDcuMzA1LS40MDQuNTQ0LS42MTQuODEyLS4xMDktMS4zODctLjIyLTIuNzcxLS4zMzEtNC4xNTh6Ii8+PHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGZpbGw9IiNDRUNEQjciIGQ9Ik02My41MDMgMTIwLjc2M2MuMjA5LS4yNjkuNTA2LS41MDguNjE0LS44MTIuODQ1LTIuNDAyIDEuNjQ2LTQuODE4IDIuNDg1LTcuMjIyLjA4My0uMjM2LjMyNS0uNDE3LjQ5NC0uNjI0bC0uNTA5IDUuNTQ1Yy0uMTM2LjE1Ny0uMzMzLjI5NC0uMzk4LjQ3Ny0uNTc1IDEuNjE0LTEuMTE3IDMuMjQtMS42OTQgNC44NTQtLjExOS4zMzMtLjM0Ny42MjctLjUyNS45MzgtLjE1OC0uMjA3LS40NDEtLjQwNy0uNDU0LS42MjMtLjA1MS0uODQxLS4wMTYtMS42ODgtLjAxMy0yLjUzM3oiLz48cGF0aCBmaWxsLXJ1bGU9ImV2ZW5vZGQiIGNsaXAtcnVsZT0iZXZlbm9kZCIgZmlsbD0iI0RCREFDNyIgZD0iTTYzLjk2OSAxMjMuOTE5Yy4xNzgtLjMxMi40MDYtLjYwNi41MjUtLjkzOC41NzgtMS42MTMgMS4xMTktMy4yMzkgMS42OTQtNC44NTQuMDY1LS4xODMuMjYzLS4zMTkuMzk4LS40NzdsLjAxMiAzLjY0LTEuMjE4IDMuMTI0LTEuNDExLS40OTV6Ii8+PHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGZpbGw9IiNFQkU5REMiIGQ9Ik02NS4zOCAxMjQuNDE1bDEuMjE4LTMuMTI0LjI1MSAzLjY5Ni0xLjQ2OS0uNTcyeiIvPjxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgY2xpcC1ydWxlPSJldmVub2RkIiBmaWxsPSIjQ0VDREI3IiBkPSJNNjcuNDY0IDExMC44OThjLS4xOTYtLjg0Ny4xMjktMS41MTguNzE3LTIuMDk3bC4zMzcuMjMtMS4wNTQgMS44Njd6Ii8+PHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGZpbGw9IiM0RkFBNDEiIGQ9Ik02NC4zMTYgOTUuMTcybC0uMDY2LS4wMTEtLjA2Ni4wMS4xNTUtLjU1OS0uMDIzLjU2eiIvPjwvc3ZnPg==","mysql":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjggMTI4Ij48cGF0aCBmaWxsPSIjMDA2MThBIiBkPSJNMTE3LjY4OCA5OC4yNDJjLTYuOTczLS4xOTEtMTIuMjk3LjQ2MS0xNi44NTIgMi4zNzktMS4yOTMuNTQ3LTMuMzU1LjU1OS0zLjU2NiAyLjE4LjcxMS43NDYuODIgMS44NTkgMS4zODcgMi43NzcgMS4wODYgMS43NTQgMi45MjIgNC4xMTMgNC41NTkgNS4zNTIgMS43ODkgMS4zNDggMy42MzMgMi43OTMgNS41NTEgMy45NjEgMy40MTQgMi4wODIgNy4yMjMgMy4yNyAxMC41MDQgNS4zNTIgMS45MzggMS4yMyAzLjg1OSAyLjc3NyA1Ljc1IDQuMTY0LjkzNC42ODQgMS41NjMgMS43NSAyLjc3MyAyLjE4di0uMTk1Yy0uNjM3LS44MTItLjgwMS0xLjkzLTEuMzg3LTIuNzc3bC0yLjU3OC0yLjU3OGMtMi41Mi0zLjM0NC01LjcxOS02LjI4MS05LjExNy04LjcxOS0yLjcxMS0xLjk0OS04Ljc4MS00LjU3OC05LjkxLTcuNzNsLS4xOTktLjE5OWMxLjkyMi0uMjE5IDQuMTcyLS45MTQgNS45NDktMS4zOTEgMi45OC0uNzk3IDUuNjQ1LS41OSA4LjcxOS0xLjM4N2w0LjE2NC0xLjE4N3YtLjc5M2MtMS41NTUtMS41OTQtMi42NjQtMy43MDctNC4zNTktNS4xNTItNC40NDEtMy43ODEtOS4yODUtNy41NTUtMTQuMjczLTEwLjcwMy0yLjc2Ni0xLjc0Ni02LjE4NC0yLjg4My05LjExNy00LjM2My0uOTg4LS40OTYtMi43MTktLjc1OC0zLjM3MS0xLjU4Ni0xLjUzOS0xLjk2MS0yLjM3OS00LjQ0OS0zLjU2Ni02LjczOC0yLjQ4OC00Ljc5My00LjkzLTEwLjAyMy03LjEzNy0xNS4wNjYtMS41MDQtMy40MzctMi40ODQtNi44MjgtNC4zNTktOS45MS05LTE0Ljc5Ny0xOC42ODctMjMuNzMtMzMuNjk1LTMyLjUwOC0zLjE5NS0xLjg2Ny03LjAzOS0yLjYwNS0xMS4xMDItMy41N2wtNi41NDMtLjM5NWMtMS4zMzItLjU1NS0yLjcxNS0yLjE4NC0zLjk2NS0yLjk3N0MxNi45NzcgMy41MiA0LjIyMy0zLjMxMi41MzkgNS42NzItMS43ODUgMTEuMzQgNC4wMTYgMTYuODcxIDYuMDkgMTkuNzQ2YzEuNDU3IDIuMDEyIDMuMzIgNC4yNzMgNC4zNTkgNi41MzkuNjg4IDEuNDkyLjgwNSAyLjk4NCAxLjM5MSA0LjU1OSAxLjQzOCAzLjg4MyAyLjY5NSA4LjEwOSA0LjU1OSAxMS42OTUuOTQxIDEuODE2IDEuOTggMy43MjcgMy4xNzIgNS4zNTIuNzI3Ljk5NiAxLjk4IDEuNDM4IDIuMTggMi45NzMtMS4yMjcgMS43MTUtMS4yOTcgNC4zNzUtMS45ODQgNi41NDMtMy4wOTggOS43Ny0xLjkyNiAyMS45MSAyLjU3OCAyOS4xMzcgMS4zODMgMi4yMjMgNC42NDEgNi45OCA5LjExNyA1LjE1NiAzLjkxOC0xLjU5OCAzLjA0My02LjUzOSA0LjE2NC0xMC45MDIuMjU0LS45ODguMDk4LTEuNzE1LjU5NC0yLjM3OXYuMTk5bDMuNTcgNy4xMzNjMi42NDEgNC4yNTQgNy4zMjQgOC42OTkgMTEuMjk3IDExLjY5OSAyLjA1OSAxLjU1NSAzLjY4IDQuMjQyIDYuMzQ0IDUuMTUydi0uMTk5aC0uMTk5Yy0uNTE2LS44MDUtMS4zMjQtMS4xMzctMS45OC0xLjc4MS0xLjU1MS0xLjUyMy0zLjI3Ny0zLjQxNC00LjU1OS01LjE1Ni0zLjYxMy00LjkwMi02LjgwNS0xMC4yNy05LjcxMS0xNS44NTUtMS4zOTEtMi42NjgtMi41OTgtNS42MDktMy43Ny04LjMyNC0uNDUzLTEuMDQ3LS40NDUtMi42MzMtMS4zODctMy4xNzItMS4yODEgMS45ODgtMy4xNzIgMy41OTgtNC4xNjQgNS45NDUtMS41ODIgMy43NTQtMS43ODkgOC4zMzYtMi4zNzUgMTMuMDgyLS4zNDguMTI1LS4xOTUuMDM5LS4zOTguMTk5LTIuNzYyLS42NjgtMy43My0zLjUwOC00Ljc1OC01Ljk0OS0yLjU5NC02LjE2NC0zLjA3OC0xNi4wOS0uNzkzLTIzLjE5MS41OS0xLjgzNiAzLjI2Mi03LjYxNyAyLjE4LTkuMzE2LS41MTYtMS42OTEtMi4yMTktMi42NzItMy4xNzItMy45NjUtMS4xOC0xLjU5OC0yLjM1NS0zLjcwMy0zLjE3Mi01LjU1MS0yLjEyNS00LjgwNS0zLjExMy0xMC4yMDMtNS4zNTItMTUuMDYyLTEuMDctMi4zMjQtMi44NzUtNC42NzYtNC4zNTktNi43MzgtMS42NDUtMi4yODktMy40ODQtMy45NzctNC43NTgtNi43NDItLjQ1My0uOTg0LTEuMDY2LTIuNTU5LS4zOTgtMy41NjYuMjE1LS42ODQuNTE2LS45NjkgMS4xOTEtMS4xOTEgMS4xNDgtLjg4NyA0LjM1Mi4yOTcgNS41NDcuNzkzIDMuMTggMS4zMiA1LjgzMiAyLjU3OCA4LjUyNyA0LjM2MyAxLjI4OS44NTUgMi41OTggMi41MTIgNC4xNiAyLjk3M2gxLjc4NWMyLjc4OS42NDEgNS45MTQuMTk1IDguNTIzLjk4OCA0LjYwOSAxLjQwMiA4LjczOCAzLjU4MiAxMi40ODggNS45NDkgMTEuNDIyIDcuMjE1IDIwLjc2NiAxNy40OCAyNy4xNTYgMjkuNzM0IDEuMDI3IDEuOTczIDEuNDczIDMuODUyIDIuMzc5IDUuOTQ1IDEuODI0IDQuMjE5IDQuMTI1IDguNTU5IDUuOTQxIDEyLjY4OCAxLjgxNiA0LjExMyAzLjU4MiA4LjI3IDYuMTQ4IDExLjY5NSAxLjM0OCAxLjgwMSA2LjU1MSAyLjc2NiA4LjkxOCAzLjc2NiAxLjY2LjY5OSA0LjM3OSAxLjQzIDUuOTQ5IDIuMzc5IDMgMS44MDkgNS45MDYgMy45NjUgOC43MjMgNS45NDUgMS40MDIuOTkyIDUuNzMgMy4xNjggNS45NDUgNC45NTd6bS04OC42MDUtNzUuNTJjLTEuNDUzLS4wMjctMi40OC4xNTYtMy41NjYuMzk1di4xOTloLjE5NWMuNjk1IDEuNDIyIDEuOTE4IDIuMzQgMi43NzcgMy41NjZsMS45OCA0LjE2NC4xOTktLjE5NWMxLjIyNy0uODY3IDEuNzg5LTIuMjUgMS43ODEtNC4zNjMtLjQ5Mi0uNTItLjU2Mi0xLjE2NC0uOTkyLTEuNzg1LS41NjItLjgyNC0xLjY2LTEuMjg5LTIuMzc1LTEuOTh6bTAgMCIvPjwvc3ZnPgo=","nextjs":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjggMTI4Ij48Y2lyY2xlIGN4PSI2NCIgY3k9IjY0IiByPSI2NCIvPjxwYXRoIGZpbGw9InVybCgjYSkiIGQ9Ik0xMDYuMzE3IDExMi4wMTQgNDkuMTY3IDM4LjRIMzguNHY1MS4xNzloOC42MTR2LTQwLjI0bDUyLjU0IDY3Ljg4NGE2NC4yMTYgNjQuMjE2IDAgMCAwIDYuNzYzLTUuMjA5eiIvPjxwYXRoIGZpbGw9InVybCgjYikiIGQ9Ik04MS43NzggMzguNGg4LjUzM3Y1MS4yaC04LjUzM3oiLz48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImEiIHgxPSIxMDkiIHgyPSIxNDQuNSIgeTE9IjExNi41IiB5Mj0iMTYwLjUiIGdyYWRpZW50VHJhbnNmb3JtPSJzY2FsZSguNzExMTEpIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHN0b3Agc3RvcC1jb2xvcj0iI2ZmZiIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI2ZmZiIgc3RvcC1vcGFjaXR5PSIwIi8+PC9saW5lYXJHcmFkaWVudD48bGluZWFyR3JhZGllbnQgaWQ9ImIiIHgxPSIxMjEiIHgyPSIxMjAuNzk5IiB5MT0iNTQiIHkyPSIxMDYuODc1IiBncmFkaWVudFRyYW5zZm9ybT0ic2NhbGUoLjcxMTExKSIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPjxzdG9wIHN0b3AtY29sb3I9IiNmZmYiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNmZmYiIHN0b3Atb3BhY2l0eT0iMCIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjwvc3ZnPgo=","python":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjggMTI4Ij48bGluZWFyR3JhZGllbnQgaWQ9InB5dGhvbi1vcmlnaW5hbC1hIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjcwLjI1MiIgeTE9IjEyMzcuNDc2IiB4Mj0iMTcwLjY1OSIgeTI9IjExNTEuMDg5IiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KC41NjMgMCAwIC0uNTY4IC0yOS4yMTUgNzA3LjgxNykiPjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzVBOUZENCIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzMwNjk5OCIvPjwvbGluZWFyR3JhZGllbnQ+PGxpbmVhckdyYWRpZW50IGlkPSJweXRob24tb3JpZ2luYWwtYiIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiIHgxPSIyMDkuNDc0IiB5MT0iMTA5OC44MTEiIHgyPSIxNzMuNjIiIHkyPSIxMTQ5LjUzNyIgZ3JhZGllbnRUcmFuc2Zvcm09Im1hdHJpeCguNTYzIDAgMCAtLjU2OCAtMjkuMjE1IDcwNy44MTcpIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNGRkQ0M0IiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNGRkU4NzMiLz48L2xpbmVhckdyYWRpZW50PjxwYXRoIGZpbGw9InVybCgjcHl0aG9uLW9yaWdpbmFsLWEpIiBkPSJNNjMuMzkxIDEuOTg4Yy00LjIyMi4wMi04LjI1Mi4zNzktMTEuOCAxLjAwNy0xMC40NSAxLjg0Ni0xMi4zNDYgNS43MS0xMi4zNDYgMTIuODM3djkuNDExaDI0LjY5M3YzLjEzN0gyOS45NzdjLTcuMTc2IDAtMTMuNDYgNC4zMTMtMTUuNDI2IDEyLjUyMS0yLjI2OCA5LjQwNS0yLjM2OCAxNS4yNzUgMCAyNS4wOTYgMS43NTUgNy4zMTEgNS45NDcgMTIuNTE5IDEzLjEyNCAxMi41MTloOC40OTFWNjcuMjM0YzAtOC4xNTEgNy4wNTEtMTUuMzQgMTUuNDI2LTE1LjM0aDI0LjY2NWM2Ljg2NiAwIDEyLjM0Ni01LjY1NCAxMi4zNDYtMTIuNTQ4VjE1LjgzM2MwLTYuNjkzLTUuNjQ2LTExLjcyLTEyLjM0Ni0xMi44MzctNC4yNDQtLjcwNi04LjY0NS0xLjAyNy0xMi44NjYtMS4wMDh6TTUwLjAzNyA5LjU1N2MyLjU1IDAgNC42MzQgMi4xMTcgNC42MzQgNC43MjEgMCAyLjU5My0yLjA4MyA0LjY5LTQuNjM0IDQuNjktMi41NiAwLTQuNjMzLTIuMDk3LTQuNjMzLTQuNjktLjAwMS0yLjYwNCAyLjA3My00LjcyMSA0LjYzMy00LjcyMXoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDAgMTAuMjYpIi8+PHBhdGggZmlsbD0idXJsKCNweXRob24tb3JpZ2luYWwtYikiIGQ9Ik05MS42ODIgMjguMzh2MTAuOTY2YzAgOC41LTcuMjA4IDE1LjY1NS0xNS40MjYgMTUuNjU1SDUxLjU5MWMtNi43NTYgMC0xMi4zNDYgNS43ODMtMTIuMzQ2IDEyLjU0OXYyMy41MTVjMCA2LjY5MSA1LjgxOCAxMC42MjggMTIuMzQ2IDEyLjU0NyA3LjgxNiAyLjI5NyAxNS4zMTIgMi43MTMgMjQuNjY1IDAgNi4yMTYtMS44MDEgMTIuMzQ2LTUuNDIzIDEyLjM0Ni0xMi41NDd2LTkuNDEySDYzLjkzOHYtMy4xMzhoMzcuMDEyYzcuMTc2IDAgOS44NTItNS4wMDUgMTIuMzQ4LTEyLjUxOSAyLjU3OC03LjczNSAyLjQ2Ny0xNS4xNzQgMC0yNS4wOTYtMS43NzQtNy4xNDUtNS4xNjEtMTIuNTIxLTEyLjM0OC0xMi41MjFoLTkuMjY4ek03Ny44MDkgODcuOTI3YzIuNTYxIDAgNC42MzQgMi4wOTcgNC42MzQgNC42OTIgMCAyLjYwMi0yLjA3NCA0LjcxOS00LjYzNCA0LjcxOS0yLjU1IDAtNC42MzMtMi4xMTctNC42MzMtNC43MTkgMC0yLjU5NSAyLjA4My00LjY5MiA0LjYzMy00LjY5MnoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDAgMTAuMjYpIi8+PHJhZGlhbEdyYWRpZW50IGlkPSJweXRob24tb3JpZ2luYWwtYyIgY3g9IjE4MjUuNjc4IiBjeT0iNDQ0LjQ1IiByPSIyNi43NDMiIGdyYWRpZW50VHJhbnNmb3JtPSJtYXRyaXgoMCAtLjI0IC0xLjA1NSAwIDUzMi45NzkgNTU3LjU3NikiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNCOEI4QjgiIHN0b3Atb3BhY2l0eT0iLjQ5OCIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzdGN0Y3RiIgc3RvcC1vcGFjaXR5PSIwIi8+PC9yYWRpYWxHcmFkaWVudD48cGF0aCBvcGFjaXR5PSIuNDQ0IiBmaWxsPSJ1cmwoI3B5dGhvbi1vcmlnaW5hbC1jKSIgZD0iTTk3LjMwOSAxMTkuNTk3YzAgMy41NDMtMTQuODE2IDYuNDE2LTMzLjA5MSA2LjQxNi0xOC4yNzYgMC0zMy4wOTItMi44NzMtMzMuMDkyLTYuNDE2IDAtMy41NDQgMTQuODE1LTYuNDE3IDMzLjA5Mi02LjQxNyAxOC4yNzUgMCAzMy4wOTEgMi44NzIgMzMuMDkxIDYuNDE3eiIvPjwvc3ZnPgo=","react":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjggMTI4Ij48ZyBmaWxsPSIjNjFEQUZCIj48Y2lyY2xlIGN4PSI2NCIgY3k9IjY0IiByPSIxMS40Ii8+PHBhdGggZD0iTTEwNy4zIDQ1LjJjLTIuMi0uOC00LjUtMS42LTYuOS0yLjMuNi0yLjQgMS4xLTQuOCAxLjUtNy4xIDIuMS0xMy4yLS4yLTIyLjUtNi42LTI2LjEtMS45LTEuMS00LTEuNi02LjQtMS42LTcgMC0xNS45IDUuMi0yNC45IDEzLjktOS04LjctMTcuOS0xMy45LTI0LjktMTMuOS0yLjQgMC00LjUuNS02LjQgMS42LTYuNCAzLjctOC43IDEzLTYuNiAyNi4xLjQgMi4zLjkgNC43IDEuNSA3LjEtMi40LjctNC43IDEuNC02LjkgMi4zQzguMiA1MCAxLjQgNTYuNiAxLjQgNjRzNi45IDE0IDE5LjMgMTguOGMyLjIuOCA0LjUgMS42IDYuOSAyLjMtLjYgMi40LTEuMSA0LjgtMS41IDcuMS0yLjEgMTMuMi4yIDIyLjUgNi42IDI2LjEgMS45IDEuMSA0IDEuNiA2LjQgMS42IDcuMSAwIDE2LTUuMiAyNC45LTEzLjkgOSA4LjcgMTcuOSAxMy45IDI0LjkgMTMuOSAyLjQgMCA0LjUtLjUgNi40LTEuNiA2LjQtMy43IDguNy0xMyA2LjYtMjYuMS0uNC0yLjMtLjktNC43LTEuNS03LjEgMi40LS43IDQuNy0xLjQgNi45LTIuMyAxMi41LTQuOCAxOS4zLTExLjQgMTkuMy0xOC44cy02LjgtMTQtMTkuMy0xOC44ek05Mi41IDE0LjdjNC4xIDIuNCA1LjUgOS44IDMuOCAyMC4zLS4zIDIuMS0uOCA0LjMtMS40IDYuNi01LjItMS4yLTEwLjctMi0xNi41LTIuNS0zLjQtNC44LTYuOS05LjEtMTAuNC0xMyA3LjQtNy4zIDE0LjktMTIuMyAyMS0xMi4zIDEuMyAwIDIuNS4zIDMuNS45ek04MS4zIDc0Yy0xLjggMy4yLTMuOSA2LjQtNi4xIDkuNi0zLjcuMy03LjQuNC0xMS4yLjQtMy45IDAtNy42LS4xLTExLjItLjQtMi4yLTMuMi00LjItNi40LTYtOS42LTEuOS0zLjMtMy43LTYuNy01LjMtMTAgMS42LTMuMyAzLjQtNi43IDUuMy0xMCAxLjgtMy4yIDMuOS02LjQgNi4xLTkuNiAzLjctLjMgNy40LS40IDExLjItLjQgMy45IDAgNy42LjEgMTEuMi40IDIuMiAzLjIgNC4yIDYuNCA2IDkuNiAxLjkgMy4zIDMuNyA2LjcgNS4zIDEwLTEuNyAzLjMtMy40IDYuNi01LjMgMTB6bTguMy0zLjNjMS41IDMuNSAyLjcgNi45IDMuOCAxMC4zLTMuNC44LTcgMS40LTEwLjggMS45IDEuMi0xLjkgMi41LTMuOSAzLjYtNiAxLjItMi4xIDIuMy00LjIgMy40LTYuMnpNNjQgOTcuOGMtMi40LTIuNi00LjctNS40LTYuOS04LjMgMi4zLjEgNC42LjIgNi45LjIgMi4zIDAgNC42LS4xIDYuOS0uMi0yLjIgMi45LTQuNSA1LjctNi45IDguM3ptLTE4LjYtMTVjLTMuOC0uNS03LjQtMS4xLTEwLjgtMS45IDEuMS0zLjMgMi4zLTYuOCAzLjgtMTAuMyAxLjEgMiAyLjIgNC4xIDMuNCA2LjEgMS4yIDIuMiAyLjQgNC4xIDMuNiA2LjF6bS03LTI1LjVjLTEuNS0zLjUtMi43LTYuOS0zLjgtMTAuMyAzLjQtLjggNy0xLjQgMTAuOC0xLjktMS4yIDEuOS0yLjUgMy45LTMuNiA2LTEuMiAyLjEtMi4zIDQuMi0zLjQgNi4yek02NCAzMC4yYzIuNCAyLjYgNC43IDUuNCA2LjkgOC4zLTIuMy0uMS00LjYtLjItNi45LS4yLTIuMyAwLTQuNi4xLTYuOS4yIDIuMi0yLjkgNC41LTUuNyA2LjktOC4zem0yMi4yIDIxbC0zLjYtNmMzLjguNSA3LjQgMS4xIDEwLjggMS45LTEuMSAzLjMtMi4zIDYuOC0zLjggMTAuMy0xLjEtMi4xLTIuMi00LjItMy40LTYuMnpNMzEuNyAzNWMtMS43LTEwLjUtLjMtMTcuOSAzLjgtMjAuMyAxLS42IDIuMi0uOSAzLjUtLjkgNiAwIDEzLjUgNC45IDIxIDEyLjMtMy41IDMuOC03IDguMi0xMC40IDEzLTUuOC41LTExLjMgMS40LTE2LjUgMi41LS42LTIuMy0xLTQuNS0xLjQtNi42ek03IDY0YzAtNC43IDUuNy05LjcgMTUuNy0xMy40IDItLjggNC4yLTEuNSA2LjQtMi4xIDEuNiA1IDMuNiAxMC4zIDYgMTUuNi0yLjQgNS4zLTQuNSAxMC41LTYgMTUuNUMxNS4zIDc1LjYgNyA2OS42IDcgNjR6bTI4LjUgNDkuM2MtNC4xLTIuNC01LjUtOS44LTMuOC0yMC4zLjMtMi4xLjgtNC4zIDEuNC02LjYgNS4yIDEuMiAxMC43IDIgMTYuNSAyLjUgMy40IDQuOCA2LjkgOS4xIDEwLjQgMTMtNy40IDcuMy0xNC45IDEyLjMtMjEgMTIuMy0xLjMgMC0yLjUtLjMtMy41LS45ek05Ni4zIDkzYzEuNyAxMC41LjMgMTcuOS0zLjggMjAuMy0xIC42LTIuMi45LTMuNS45LTYgMC0xMy41LTQuOS0yMS0xMi4zIDMuNS0zLjggNy04LjIgMTAuNC0xMyA1LjgtLjUgMTEuMy0xLjQgMTYuNS0yLjUuNiAyLjMgMSA0LjUgMS40IDYuNnptOS0xNS42Yy0yIC44LTQuMiAxLjUtNi40IDIuMS0xLjYtNS0zLjYtMTAuMy02LTE1LjYgMi40LTUuMyA0LjUtMTAuNSA2LTE1LjUgMTMuOCA0IDIyLjEgMTAgMjIuMSAxNS42IDAgNC43LTUuOCA5LjctMTUuNyAxMy40eiIvPjwvZz48L3N2Zz4=","sanity":"data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB2aWV3Qm94PSIwIDAgMTI4IDEyOCI+CiAgICA8cmVjdCBmaWxsPSIjRjAzRTJGIiBoZWlnaHQ9IjEyOCIgd2lkdGg9IjEyOCI+PC9yZWN0PgogICAgPHBhdGggZmlsbD0iI0ZGRkZGRiIgZD0iTTM5LjQyMjkgMzMuMTYyOUMzOS40MjI5IDQ0LjE2MTQgNDYuMzM2MiA1MC43MDU1IDYwLjE3NjcgNTQuMTU2M0w3NC44NDI5IDU3LjQ5NzFDODcuOTQxNyA2MC40NTMgOTUuOTE4NSA2Ny43OTQ1IDk1LjkxODUgNzkuNzU1NEM5Ni4wMjA0IDg0Ljk2NjIgOTQuMjk2IDkwLjA1MyA5MS4wMzQ1IDk0LjE2MzRDOTEuMDM0NSA4Mi4yMyA4NC43NTEgNzUuNzgyMiA2OS41OTUgNzEuOTA1Mkw1NS4xOTQ3IDY4LjY4ODFDNDMuNjYzMyA2Ni4xMDM1IDM0Ljc2MjggNjAuMDY4IDM0Ljc2MjggNDcuMDc2QzM0LjcwMjEgNDIuMDU4OSAzNi4zNDE1IDM3LjE2NDQgMzkuNDIyOSAzMy4xNjI5WiI+PC9wYXRoPgogICAgPHBhdGggZmlsbD0iI0Y5QjFBQiIgZD0iTTgyLjAyMjEgNzYuODI3Qzg4LjI3NzYgODAuNzU5IDkxLjAyMDUgODYuMjU4MyA5MS4wMjA1IDk0LjE0OTdDODUuODQyNiAxMDAuNjY2IDc2Ljc0NjIgMTA0LjMyMyA2Ni4wNTQ1IDEwNC4zMjNDNDguMDU3NiAxMDQuMzIzIDM1LjQ2MjYgOTUuNjIwNyAzMi42NjM3IDgwLjQ5NzhINDkuOTQ2OEM1Mi4xNzIgODcuNDQwNiA1OC4wNjM2IDkwLjY1NzcgNjUuOTI4NSA5MC42NTc3Qzc1LjUyODcgOTAuNjU3NyA4MS45MTAyIDg1LjYyNTggODIuMDM2MSA3Ni43OTk1Ij48L3BhdGg+CiAgICA8cGF0aCBmaWxsPSIjRjlCMUFCIiBkPSJNNDguNDA3NCA0OS40NjgyQzQ1LjU1MDkgNDcuODAwNCA0My4yMDczIDQ1LjQwNCA0MS42MjU1IDQyLjUzMzJDNDAuMDQzNyAzOS42NjI0IDM5LjI4MjUgMzYuNDI0NCAzOS40MjMgMzMuMTYyOUM0NC40MTkgMjYuNzAxMyA1My4xMDk1IDIyLjc1NTYgNjMuNzAzMyAyMi43NTU2QzgyLjAzNjEgMjIuNzU1NiA5Mi42NDM5IDMyLjI2OTMgOTUuMjYwOCA0NS42Nkg3OC42MzU0Qzc2LjgwMjEgNDAuMzgwNyA3Mi4yMTIgMzYuMjcgNjMuODQzMyAzNi4yN0M1NC45MDA4IDM2LjI3IDQ4Ljc5OTIgNDEuMzg0MyA0OC40NDk0IDQ5LjQ2ODIiPjwvcGF0aD4KPC9zdmc+Cg==","supabase":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjggMTI4Ij48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImEiIHgxPSI1My45NzQiIHgyPSI5NC4xNjMiIHkxPSI1NC45NzQiIHkyPSI3MS44MjkiIGdyYWRpZW50VHJhbnNmb3JtPSJ0cmFuc2xhdGUoMjkuMzg3IDYwLjA5Nikgc2NhbGUoMS4xNDM2KSIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzI0OTM2MSIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzNlY2Y4ZSIvPjwvbGluZWFyR3JhZGllbnQ+PGxpbmVhckdyYWRpZW50IGlkPSJiIiB4MT0iMzYuMTU2IiB4Mj0iNTQuNDg0IiB5MT0iMzAuNTc4IiB5Mj0iNjUuMDgxIiBncmFkaWVudFRyYW5zZm9ybT0idHJhbnNsYXRlKDI5LjM4NyA2MC4wOTYpIHNjYWxlKDEuMTQzNikiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj48c3RvcCBvZmZzZXQ9IjAiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3Atb3BhY2l0eT0iMCIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxwYXRoIGZpbGw9InVybCgjYSkiIGQ9Ik0xMDIuMjQgMTg2LjIxYy0zLjI2NyA0LjExNy05LjkwNCAxLjg2Mi05Ljk3Ny0zLjM5N2wtMS4xNTYtNzYuOTA2aDUxLjcxNWM5LjM2NSAwIDE0LjU4NyAxMC44MTcgOC43NjMgMTguMTQ5eiIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoLTI3LjcyMiAtNjAuMzM4KSIvPjxwYXRoIGZpbGw9InVybCgjYikiIGZpbGwtb3BhY2l0eT0iLjIiIGQ9Ik0xMDIuMjQgMTg2LjIxYy0zLjI2NyA0LjExNy05LjkwNCAxLjg2Mi05Ljk3Ny0zLjM5N2wtMS4xNTYtNzYuOTA2aDUxLjcxNWM5LjM2NSAwIDE0LjU4NyAxMC44MTcgOC43NjMgMTguMTQ5eiIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoLTI3LjcyMiAtNjAuMzM4KSIvPjxwYXRoIGZpbGw9IiMzZWNmOGUiIGQ9Ik01My40ODQgMi4xMjhjMy4yNjctNC4xMTcgOS45MDUtMS44NjIgOS45NzcgMy4zOTZsLjUwOCA3Ni45MDdIMTIuOTAyYy05LjM2NSAwLTE0LjU4Ny0xMC44MTctOC43NjQtMTguMTQ5eiIvPjwvc3ZnPgo=","tailwind":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjggMTI4Ij48cGF0aCBkPSJNNjQuMDA0IDI1LjYwMmMtMTcuMDY3IDAtMjcuNzMgOC41My0zMiAyNS41OTcgNi4zOTgtOC41MzEgMTMuODY3LTExLjczIDIyLjM5OC05LjU5NyA0Ljg3MSAxLjIxNCA4LjM1MiA0Ljc0NiAxMi4yMDcgOC42NkM3Mi44ODMgNTYuNjI5IDgwLjE0NSA2NCA5Ni4wMDQgNjRjMTcuMDY2IDAgMjcuNzMtOC41MzEgMzItMjUuNjAyLTYuMzk5IDguNTM2LTEzLjg2NyAxMS43MzUtMjIuMzk5IDkuNjAyLTQuODctMS4yMTUtOC4zNDctNC43NDYtMTIuMjA3LTguNjYtNi4yNy02LjM2Ny0xMy41My0xMy43MzgtMjkuMzk0LTEzLjczOHpNMzIuMDA0IDY0Yy0xNy4wNjYgMC0yNy43MyA4LjUzMS0zMiAyNS42MDJDNi40MDIgODEuMDY2IDEzLjg3IDc3Ljg2NyAyMi40MDIgODBjNC44NzEgMS4yMTUgOC4zNTIgNC43NDYgMTIuMjA3IDguNjYgNi4yNzQgNi4zNjcgMTMuNTM2IDEzLjczOCAyOS4zOTUgMTMuNzM4IDE3LjA2NiAwIDI3LjczLTguNTMgMzItMjUuNTk3LTYuMzk5IDguNTMxLTEzLjg2NyAxMS43My0yMi4zOTkgOS41OTctNC44Ny0xLjIxNC04LjM0Ny00Ljc0Ni0xMi4yMDctOC42NkM1NS4xMjggNzEuMzcxIDQ3Ljg2OCA2NCAzMi4wMDQgNjR6bTAgMCIgZmlsbD0iIzM4YmRmOCIvPjwvc3ZnPgo=","threejs":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjggMTI4Ij48ZyBjb2xvcj0iIzAwMCIgZm9udC13ZWlnaHQ9IjQwMCIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiPjxwYXRoIHN0eWxlPSJsaW5lLWhlaWdodDpub3JtYWw7Zm9udC12YXJpYW50LWxpZ2F0dXJlczpub3JtYWw7Zm9udC12YXJpYW50LXBvc2l0aW9uOm5vcm1hbDtmb250LXZhcmlhbnQtY2Fwczpub3JtYWw7Zm9udC12YXJpYW50LW51bWVyaWM6bm9ybWFsO2ZvbnQtdmFyaWFudC1hbHRlcm5hdGVzOm5vcm1hbDtmb250LXZhcmlhbnQtZWFzdC1hc2lhbjpub3JtYWw7Zm9udC1mZWF0dXJlLXNldHRpbmdzOm5vcm1hbDtmb250LXZhcmlhdGlvbi1zZXR0aW5nczpub3JtYWw7dGV4dC1pbmRlbnQ6MDt0ZXh0LWFsaWduOnN0YXJ0O3RleHQtZGVjb3JhdGlvbi1saW5lOm5vbmU7dGV4dC1kZWNvcmF0aW9uLXN0eWxlOnNvbGlkO3RleHQtZGVjb3JhdGlvbi1jb2xvcjojMDAwO3RleHQtdHJhbnNmb3JtOm5vbmU7dGV4dC1vcmllbnRhdGlvbjptaXhlZDt3aGl0ZS1zcGFjZTpub3JtYWw7c2hhcGUtcGFkZGluZzowO3NoYXBlLW1hcmdpbjowO2lubGluZS1zaXplOjA7aXNvbGF0aW9uOmF1dG87bWl4LWJsZW5kLW1vZGU6bm9ybWFsO3NvbGlkLWNvbG9yOiMwMDA7c29saWQtb3BhY2l0eToxIiBkPSJNMTYuMjE5IDE1Ljc2MmExLjEyOSAxLjEyOSAwIDAwLTEuMDc2IDEuMzk5bDI0LjM5NCA5OC43NDJhMS4xMjkgMS4xMjkgMCAwMDEuODc5LjU0NGw3My4zODYtNzAuNTlhMS4xMjkgMS4xMjkgMCAwMC0uNDctMS44OTlMMTYuNTUgMTUuODA2YTEuMTI5IDEuMTI5IDAgMDAtLjMzMS0uMDQ0em0xLjU4NCAyLjc1NGw5NC4wMjQgMjcuMDctNzAuNTY2IDY3Ljg3Ny0yMy40NTgtOTQuOTQ3eiIgb3ZlcmZsb3c9InZpc2libGUiLz48cGF0aCBzdHlsZT0ibGluZS1oZWlnaHQ6bm9ybWFsO2ZvbnQtdmFyaWFudC1saWdhdHVyZXM6bm9ybWFsO2ZvbnQtdmFyaWFudC1wb3NpdGlvbjpub3JtYWw7Zm9udC12YXJpYW50LWNhcHM6bm9ybWFsO2ZvbnQtdmFyaWFudC1udW1lcmljOm5vcm1hbDtmb250LXZhcmlhbnQtYWx0ZXJuYXRlczpub3JtYWw7Zm9udC12YXJpYW50LWVhc3QtYXNpYW46bm9ybWFsO2ZvbnQtZmVhdHVyZS1zZXR0aW5nczpub3JtYWw7Zm9udC12YXJpYXRpb24tc2V0dGluZ3M6bm9ybWFsO3RleHQtaW5kZW50OjA7dGV4dC1hbGlnbjpzdGFydDt0ZXh0LWRlY29yYXRpb24tbGluZTpub25lO3RleHQtZGVjb3JhdGlvbi1zdHlsZTpzb2xpZDt0ZXh0LWRlY29yYXRpb24tY29sb3I6IzAwMDt0ZXh0LXRyYW5zZm9ybTpub25lO3RleHQtb3JpZW50YXRpb246bWl4ZWQ7d2hpdGUtc3BhY2U6bm9ybWFsO3NoYXBlLXBhZGRpbmc6MDtzaGFwZS1tYXJnaW46MDtpbmxpbmUtc2l6ZTowO2lzb2xhdGlvbjphdXRvO21peC1ibGVuZC1tb2RlOm5vcm1hbDtzb2xpZC1jb2xvcjojMDAwO3NvbGlkLW9wYWNpdHk6MSIgZD0iTTY1LjEzNyAyOS44NGExLjEyOSAxLjEyOSAwIDAwLS44MDcuMzE1TDI3LjY1NCA2NS40NmExLjEyOSAxLjEyOSAwIDAwLjQ3MSAxLjg5OEw3Ni45ODQgODEuNDRhMS4xMjkgMS4xMjkgMCAwMDEuNDA5LTEuMzU1TDY2LjIxIDMwLjY5OGExLjEyOSAxLjEyOSAwIDAwLTEuMDczLS44NTh6bS0uNjUxIDMuM0w3NS43MzQgNzguNzNsLTQ1LjEwNC0xM0w2NC40ODYgMzMuMTR6IiBvdmVyZmxvdz0idmlzaWJsZSIvPjxwYXRoIHN0eWxlPSJsaW5lLWhlaWdodDpub3JtYWw7Zm9udC12YXJpYW50LWxpZ2F0dXJlczpub3JtYWw7Zm9udC12YXJpYW50LXBvc2l0aW9uOm5vcm1hbDtmb250LXZhcmlhbnQtY2Fwczpub3JtYWw7Zm9udC12YXJpYW50LW51bWVyaWM6bm9ybWFsO2ZvbnQtdmFyaWFudC1hbHRlcm5hdGVzOm5vcm1hbDtmb250LXZhcmlhbnQtZWFzdC1hc2lhbjpub3JtYWw7Zm9udC1mZWF0dXJlLXNldHRpbmdzOm5vcm1hbDtmb250LXZhcmlhdGlvbi1zZXR0aW5nczpub3JtYWw7dGV4dC1pbmRlbnQ6MDt0ZXh0LWFsaWduOnN0YXJ0O3RleHQtZGVjb3JhdGlvbi1saW5lOm5vbmU7dGV4dC1kZWNvcmF0aW9uLXN0eWxlOnNvbGlkO3RleHQtZGVjb3JhdGlvbi1jb2xvcjojMDAwO3RleHQtdHJhbnNmb3JtOm5vbmU7dGV4dC1vcmllbnRhdGlvbjptaXhlZDt3aGl0ZS1zcGFjZTpub3JtYWw7c2hhcGUtcGFkZGluZzowO3NoYXBlLW1hcmdpbjowO2lubGluZS1zaXplOjA7aXNvbGF0aW9uOmF1dG87bWl4LWJsZW5kLW1vZGU6bm9ybWFsO3NvbGlkLWNvbG9yOiMwMDA7c29saWQtb3BhY2l0eToxIiBkPSJNNDYuOTE0IDQ3LjMxM2ExLjEyOSAxLjEyOSAwIDAwLTEuMDc2IDEuMzk5bDYuMDU0IDI0LjUzMWExLjEyOSAxLjEyOSAwIDAwMS44OC41NDNsMTguMjIyLTE3LjU2M2ExLjEyOSAxLjEyOSAwIDAwLS40NzItMS44OThsLTI0LjI3Ny02Ljk2OGExLjEyOSAxLjEyOSAwIDAwLS4zMzEtLjA0NHptMS41ODMgMi43NTFsMjAuNTIyIDUuODlMNTMuNjE0IDcwLjhsLTUuMTE3LTIwLjczNnoiIG92ZXJmbG93PSJ2aXNpYmxlIi8+PHBhdGggc3R5bGU9ImxpbmUtaGVpZ2h0Om5vcm1hbDtmb250LXZhcmlhbnQtbGlnYXR1cmVzOm5vcm1hbDtmb250LXZhcmlhbnQtcG9zaXRpb246bm9ybWFsO2ZvbnQtdmFyaWFudC1jYXBzOm5vcm1hbDtmb250LXZhcmlhbnQtbnVtZXJpYzpub3JtYWw7Zm9udC12YXJpYW50LWFsdGVybmF0ZXM6bm9ybWFsO2ZvbnQtdmFyaWFudC1lYXN0LWFzaWFuOm5vcm1hbDtmb250LWZlYXR1cmUtc2V0dGluZ3M6bm9ybWFsO2ZvbnQtdmFyaWF0aW9uLXNldHRpbmdzOm5vcm1hbDt0ZXh0LWluZGVudDowO3RleHQtYWxpZ246c3RhcnQ7dGV4dC1kZWNvcmF0aW9uLWxpbmU6bm9uZTt0ZXh0LWRlY29yYXRpb24tc3R5bGU6c29saWQ7dGV4dC1kZWNvcmF0aW9uLWNvbG9yOiMwMDA7dGV4dC10cmFuc2Zvcm06bm9uZTt0ZXh0LW9yaWVudGF0aW9uOm1peGVkO3doaXRlLXNwYWNlOm5vcm1hbDtzaGFwZS1wYWRkaW5nOjA7c2hhcGUtbWFyZ2luOjA7aW5saW5lLXNpemU6MDtpc29sYXRpb246YXV0bzttaXgtYmxlbmQtbW9kZTpub3JtYWw7c29saWQtY29sb3I6IzAwMDtzb2xpZC1vcGFjaXR5OjEiIGQ9Ik00MC45MDIgMjIuODA5YTEuMTI5IDEuMTI5IDAgMDAtLjgwNy4zMTZMMjEuODczIDQwLjY4N2ExLjEyOSAxLjEyOSAwIDAwLjQ3MiAxLjg5OGwyNC4yNzMgNi45NjlhMS4xMjkgMS4xMjkgMCAwMDEuNDA4LTEuMzU2bC02LjA1MS0yNC41M2ExLjEyOSAxLjEyOSAwIDAwLTEuMDczLS44NnptLS42NSAzLjNsNS4xMTQgMjAuNzM2LTIwLjUxNy01Ljg5IDE1LjQwMy0xNC44NDd6TTg5LjQ1MyAzNi43OTNhMS4xMjkgMS4xMjkgMCAwMC0uODA2LjMxNkw3MC40MjMgNTQuNjdhMS4xMjkgMS4xMjkgMCAwMC40NzIgMS44OTlsMjQuMjc0IDYuOTY4YTEuMTI5IDEuMTI5IDAgMDAxLjQwOC0xLjM1NmwtNi4wNS0yNC41M2ExLjEyOSAxLjEyOSAwIDAwLTEuMDc0LS44NTl6bS0uNjUgMy4zbDUuMTE0IDIwLjczN0w3My40IDU0Ljk0bDE1LjQwMy0xNC44NDZ6TTUyLjk0NCA3MS44NjRhMS4xMjkgMS4xMjkgMCAwMC0uNzQuMzE1TDMzLjk4MiA4OS43NDJhMS4xMjkgMS4xMjkgMCAwMC40NzIgMS44OThsMjQuMjc4IDYuOTY4YTEuMTI5IDEuMTI5IDAgMDAxLjQwNy0xLjM1NWwtNi4wNTUtMjQuNTMxYTEuMTI5IDEuMTI5IDAgMDAtMS4xNC0uODU4em0tLjU4MiAzLjNsNS4xMTggMjAuNzM3LTIwLjUyMi01Ljg5IDE1LjQwNC0xNC44NDZ6IiBvdmVyZmxvdz0idmlzaWJsZSIvPjwvZz48L3N2Zz4K","typescript":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjggMTI4Ij48cGF0aCBmaWxsPSIjZmZmIiBkPSJNMjIuNjcgNDdoOTkuNjd2NzMuNjdIMjIuNjd6Ii8+PHBhdGggZGF0YS1uYW1lPSJvcmlnaW5hbCIgZmlsbD0iIzAwN2FjYyIgZD0iTTEuNSA2My45MXY2Mi41aDEyNXYtMTI1SDEuNXptMTAwLjczLTVhMTUuNTYgMTUuNTYgMCAwMTcuODIgNC41IDIwLjU4IDIwLjU4IDAgMDEzIDRjMCAuMTYtNS40IDMuODEtOC42OSA1Ljg1LS4xMi4wOC0uNi0uNDQtMS4xMy0xLjIzYTcuMDkgNy4wOSAwIDAwLTUuODctMy41M2MtMy43OS0uMjYtNi4yMyAxLjczLTYuMjEgNWE0LjU4IDQuNTggMCAwMC41NCAyLjM0Yy44MyAxLjczIDIuMzggMi43NiA3LjI0IDQuODYgOC45NSAzLjg1IDEyLjc4IDYuMzkgMTUuMTYgMTAgMi42NiA0IDMuMjUgMTAuNDYgMS40NSAxNS4yNC0yIDUuMi02LjkgOC43My0xMy44MyA5LjlhMzguMzIgMzguMzIgMCAwMS05LjUyLS4xIDIzIDIzIDAgMDEtMTIuNzItNi42M2MtMS4xNS0xLjI3LTMuMzktNC41OC0zLjI1LTQuODJhOS4zNCA5LjM0IDAgMDExLjE1LS43M0w4MiAxMDFsMy41OS0yLjA4Ljc1IDEuMTFhMTYuNzggMTYuNzggMCAwMDQuNzQgNC41NGM0IDIuMSA5LjQ2IDEuODEgMTIuMTYtLjYyYTUuNDMgNS40MyAwIDAwLjY5LTYuOTJjLTEtMS4zOS0zLTIuNTYtOC41OS01LTYuNDUtMi43OC05LjIzLTQuNS0xMS43Ny03LjI0YTE2LjQ4IDE2LjQ4IDAgMDEtMy40My02LjI1IDI1IDI1IDAgMDEtLjIyLThjMS4zMy02LjIzIDYtMTAuNTggMTIuODItMTEuODdhMzEuNjYgMzEuNjYgMCAwMTkuNDkuMjZ6bS0yOS4zNCA1LjI0djUuMTJINTYuNjZ2NDYuMjNINDUuMTVWNjkuMjZIMjguODh2LTVhNDkuMTkgNDkuMTkgMCAwMS4xMi01LjE3QzI5LjA4IDU5IDM5IDU5IDUxIDU5aDIxLjgzeiIvPjwvc3ZnPg==","vite":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjggMTI4Ij48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImEiIHgxPSI2IiB4Mj0iMjM1IiB5MT0iMzMiIHkyPSIzNDQiIGdyYWRpZW50VHJhbnNmb3JtPSJ0cmFuc2xhdGUoMCAuOTM3KSBzY2FsZSguMzEyMikiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiM0MWQxZmYiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNiZDM0ZmUiLz48L2xpbmVhckdyYWRpZW50PjxsaW5lYXJHcmFkaWVudCBpZD0iYiIgeDE9IjE5NC42NTEiIHgyPSIyMzYuMDc2IiB5MT0iOC44MTgiIHkyPSIyOTIuOTg5IiBncmFkaWVudFRyYW5zZm9ybT0idHJhbnNsYXRlKDAgLjkzNykgc2NhbGUoLjMxMjIpIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjZmZlYTgzIi8+PHN0b3Agb2Zmc2V0PSIuMDgzIiBzdG9wLWNvbG9yPSIjZmZkZDM1Ii8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjZmZhODAwIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHBhdGggZmlsbD0idXJsKCNhKSIgZD0iTTEyNC43NjYgMTkuNTIgNjcuMzI0IDEyMi4yMzhjLTEuMTg3IDIuMTIxLTQuMjM0IDIuMTMzLTUuNDM3LjAyNEwzLjMwNSAxOS41MzJjLTEuMzEzLTIuMzAyLjY1Mi01LjA4NyAzLjI2MS00LjYyMkw2NC4wNyAyNS4xODdhMy4wOSAzLjA5IDAgMCAwIDEuMTEgMGw1Ni4zLTEwLjI2MWMyLjU5OC0uNDczIDQuNTc1IDIuMjg5IDMuMjg2IDQuNTk0Wm0wIDAiLz48cGF0aCBmaWxsPSJ1cmwoI2IpIiBkPSJNOTEuNDYgMS40MyA0OC45NTQgOS43NThhMS41NiAxLjU2IDAgMCAwLTEuMjU4IDEuNDM3bC0yLjYxNyA0NC4xNjhhMS41NjMgMS41NjMgMCAwIDAgMS45MSAxLjYxNGwxMS44MzYtMi43MzVhMS41NjIgMS41NjIgMCAwIDEgMS44OCAxLjgzNmwtMy41MTcgMTcuMjE5YTEuNTYyIDEuNTYyIDAgMCAwIDEuOTg1IDEuODA1bDcuMzA4LTIuMjIzYzEuMTMzLS4zNDQgMi4yMjMuNjUyIDEuOTg1IDEuODEybC01LjU5IDI3LjA0N2MtLjM0OCAxLjY5MiAxLjkwMiAyLjYxNCAyLjg0IDEuMTY0bC42MjUtLjk2OCAzNC42NC02OS4xM2MuNTgyLTEuMTYtLjQyMS0yLjQ4LTEuNjktMi4yMzRsLTEyLjE4NSAyLjM1MmExLjU1OCAxLjU1OCAwIDAgMS0xLjc5My0xLjk2NWw3Ljk1LTI3LjU2MkExLjU2IDEuNTYgMCAwIDAgOTEuNDYgMS40M1ptMCAwIi8+PC9zdmc+Cg=="};
+</script>
+
+<script type="module">
+/* The Spline robot in the nav. Its scene already tracks the pointer.
+   Loaded from jsDelivr; if either the runtime or the scene is unreachable
+   (offline, blocked by a host CSP) the canvas is removed rather than left
+   as an empty square. */
+(async () => {
+  const box = document.getElementById('botbox');
+  const c = document.getElementById('bot');
+  if (!box || !c) return;
+  try {
+    const { Application } = await import('https://cdn.jsdelivr.net/npm/@splinetool/runtime@1.0.50/build/runtime.js');
+    const app = new Application(c);
+    await app.load('https://prod.spline.design/gBVxx9uvdJZBlYNO/scene.splinecode');
+    box.classList.add('ready');
+  } catch (err) {
+    console.warn('[portfolio] Spline robot unavailable:', err && err.message);
+    box.remove();
+  }
+})();
+</script>
+
+<script>
+(() => {
+  'use strict';
+
+  /* ---------------- content ---------------- */
+  const PROJECTS = [
+    {
+      title: '3D e-commerce keyboard store',
+      shot: 'images/proj5.jpg',
+      desc: 'An interactive, 3D-enhanced e-commerce platform for a fictional keyboard brand called Nimbus.',
+      url: 'https://keyboard-dusky-pi.vercel.app/',
+      stack: ['nextjs', 'typescript', 'threejs', 'tailwind'],
+      tone: 'blue',
+    },
+    {
+      title: 'Post, connect, and join the vibe',
+      shot: 'images/proj1.jpg',
+      desc: 'A social app where you can create an account, chat with friends, share posts, and join or build communities that interest you.',
+      url: 'https://social-media2-xi.vercel.app/',
+      stack: ['react', 'tailwind', 'supabase', 'typescript'],
+      tone: 'purple',
+    },
+    {
+      title: 'Researcher website — freelance',
+      shot: 'images/proj2.jpg',
+      desc: 'A personal site for a researcher to showcase their work, publications, blogs and writing, and connect with a wider audience.',
+      url: 'https://next-sanity-2brg.vercel.app/',
+      stack: ['react', 'typescript', 'sanity', 'tailwind'],
+      tone: 'white',
+    },
+    {
+      title: 'Talk. Draw. Connect.',
+      shot: 'images/proj3.jpg',
+      desc: 'An interactive app where you can join rooms, chat with others, and draw together in real time.',
+      url: 'https://audio-rooms.vercel.app/',
+      stack: ['html5', 'react', 'tailwind', 'python'],
+      tone: 'teal',
+    },
+    {
+      title: 'Shadow Tic-Tac-Toe',
+      shot: 'images/proj4.jpg',
+      desc: 'After every fourth move your oldest mark fades into darkness. Only the strongest strategies survive in the shadows.',
+      url: 'https://shadow-tictactoe.vercel.app/',
+      stack: ['vite', 'react', 'tailwind'],
+      tone: 'amber',
+    },
+  ];
+
+  // brand colour per tool, used to tint the capsule while that logo is hovered
+  const TOOLKIT = {
+    css3:'#1572B6',  java:'#E76F00',    react:'#61DAFB',  javascript:'#F7DF1E',
+    python:'#3776AB', typescript:'#3178C6', tailwind:'#38BDF8', sanity:'#F03E2F',
+    mongodb:'#47A248', vite:'#646CFF',  cpp:'#00599C',    mysql:'#4479A1',
+    supabase:'#3ECF8E',
+  };
+
+  /* ---------------- tech marquee ---------------- */
+  const track = document.getElementById('track');
+  const techbar = document.querySelector('.techbar');
+
+  if (track) {
+    // two identical runs, so the scroll can wrap at exactly half the width
+    const run = Object.keys(TOOLKIT).map(k =>
+      `<img src="${ICONS[k]}" alt="${k}" data-tint="${TOOLKIT[k]}" loading="lazy" width="32" height="32">`).join('');
+    track.innerHTML = run + run;
+
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const CRUISE = 30;   // px per second at rest
+      const HOVER  = 2.5;  // px per second while pointed at -- slowed, not stopped
+      let x = 0, speed = CRUISE, slow = false, prev = performance.now();
+
+      if (techbar) {
+        techbar.addEventListener('pointerenter', () => { slow = true; });
+        techbar.addEventListener('pointerleave', () => { slow = false; });
+      }
+
+      const roll = now => {
+        const dt = Math.min((now - prev) / 1000, 0.05);
+        prev = now;
+        // ease toward the target rate so the change of pace is never abrupt
+        speed += ((slow ? HOVER : CRUISE) - speed) * Math.min(1, dt * 3.5);
+        x -= speed * dt;
+        const half = track.scrollWidth / 2;
+        if (half > 0 && x <= -half) x += half;   // wrap on the seam
+        track.style.transform = `translateX(${x}px)`;
+        requestAnimationFrame(roll);
+      };
+      requestAnimationFrame(roll);
+    }
+  }
+
+  // Capsule takes on the hovered logo's brand colour.
+  if (techbar) {
+    const hexToChannels = h => {
+      const n = parseInt(h.slice(1), 16);
+      return `${(n >> 16) & 255},${(n >> 8) & 255},${n & 255}`;
+    };
+    techbar.addEventListener('pointerover', e => {
+      const icon = e.target.closest('img[data-tint]');
+      if (icon) {
+        techbar.style.setProperty('--tint-rgb', hexToChannels(icon.dataset.tint));
+        techbar.classList.add('is-tinted');
+      } else {
+        // moved onto the capsule but between logos -- drop back to neutral
+        techbar.classList.remove('is-tinted');
+      }
+    });
+    techbar.addEventListener('pointerleave', () => techbar.classList.remove('is-tinted'));
+  }
+
+  // pointer-tracked sheen, same as the project cards
+  if (techbar) {
+    techbar.addEventListener('pointermove', e => {
+      const r = techbar.getBoundingClientRect();
+      techbar.style.setProperty('--mx', ((e.clientX - r.left) / r.width * 100) + '%');
+      techbar.style.setProperty('--my', ((e.clientY - r.top) / r.height * 100) + '%');
+    });
+  }
+
+  /* ---------------- project cards ---------------- */
+  const grid = document.getElementById('grid');
+  if (grid) {
+    grid.innerHTML = PROJECTS.map((p, i) => `
+      <article class="card card--${p.tone} reveal" style="transition-delay:${i * 70}ms">
+        <div class="card__shot"><img src="${p.shot}" alt="${p.title}" loading="lazy"></div>
+        <h3 class="card__title">${p.title}</h3>
+        <p class="card__desc">${p.desc}</p>
+        <div class="card__foot">
+          <div class="stack">${p.stack.map(s =>
+            `<img src="${ICONS[s]}" alt="${s}" title="${s}" width="19" height="19">`).join('')}</div>
+          <a class="live" href="${p.url}" target="_blank" rel="noopener">See it live
+            <svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M3 9L9 3M9 3H4.5M9 3v4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+        </div>
+      </article>`).join('');
+
+    // pointer-tracked sheen
+    grid.querySelectorAll('.card').forEach(card => {
+      card.addEventListener('pointermove', e => {
+        const r = card.getBoundingClientRect();
+        card.style.setProperty('--mx', ((e.clientX - r.left) / r.width * 100) + '%');
+        card.style.setProperty('--my', ((e.clientY - r.top) / r.height * 100) + '%');
+      });
+    });
+  }
+
+  /* ---------------- typewriter ---------------- */
+  const TYPE_TEXT = "hey! i'm Parth";
+  const typeEl = document.getElementById('type');
+  if (typeEl && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    // Deletion stops at the greeting so the headline is never blank -- only
+    // the name retypes.
+    const KEEP = TYPE_TEXT.indexOf('Parth');
+    let i = 0, forward = true;
+    const tick = () => {
+      typeEl.textContent = TYPE_TEXT.slice(0, i);
+      if (forward) {
+        if (i < TYPE_TEXT.length) { i++; setTimeout(tick, 95); }
+        else { forward = false; setTimeout(tick, 2600); }
+      } else {
+        if (i > KEEP) { i--; setTimeout(tick, 45); }
+        else { forward = true; setTimeout(tick, 700); }
+      }
+    };
+    setTimeout(tick, 600);
+  } else if (typeEl) {
+    typeEl.textContent = TYPE_TEXT;
+  }
+
+  /* ---------------- reveal on scroll ---------------- */
+  const revealer = new IntersectionObserver((entries, obs) => {
+    entries.forEach(en => {
+      if (en.isIntersecting) { en.target.classList.add('in'); obs.unobserve(en.target); }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+  document.querySelectorAll('.reveal').forEach(el => revealer.observe(el));
+
+  /* ---------------- stats ---------------- */
+  // Always report the next multiple of ten at or above the real count.
+  const roundUpTen = n => Math.ceil(n / 10) * 10;
+
+  const LC_USER = 'Parth_Tripathi2409';
+
+  // Painted instantly so the panel is never blank, and used if the live call
+  // is slow or down. Real figures as of the last check -- overwritten the
+  // moment a live response lands.
+  const LC_FALLBACK = { total: 470, easy: 165, medium: 258, hard: 47 };
+  // Tried in order. The first is your own Vercel function -- it only exists
+  // once this is deployed there, so it 404s when the file is opened directly.
+  // The second is a public mirror that actually sends `access-control-allow-
+  // origin: *`, which is what lets a browser read it at all; it runs on a free
+  // tier that sleeps, hence the timeout and the fallback above.
+  const LC_SOURCES = [
+    { url: `/api/server?username=${LC_USER}`, pick: d => {
+        const a = d.data.matchedUser.submitStats.acSubmissionNum;
+        return { total: a[0].count, easy: a[1].count, medium: a[2].count, hard: a[3].count };
+      } },
+    { url: `https://alfa-leetcode-api.onrender.com/${LC_USER}/solved`, pick: d =>
+        ({ total: d.solvedProblem, easy: d.easySolved, medium: d.mediumSolved, hard: d.hardSolved }) },
+  ];
+
+  function countUp(el, target, ms) {
+    const t0 = performance.now();
+    const step = now => {
+      const p = Math.min((now - t0) / ms, 1);
+      const eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = Math.floor(eased * target) + '+';
+      if (p < 1) requestAnimationFrame(step);
+      else el.textContent = target + '+';
+    };
+    requestAnimationFrame(step);
+  }
+
+  async function loadLeetCode() {
+    for (const src of LC_SOURCES) {
+      try {
+        const res = await fetch(src.url, {
+          cache: 'no-store',
+          signal: AbortSignal.timeout(12000),   // free-tier cold starts can hang
+        });
+        if (!res.ok) continue;
+        const stats = src.pick(await res.json());
+        if (Number.isFinite(stats.total) && stats.total > 0) return stats;
+      } catch (_) { /* try the next source */ }
+    }
+    return null;
+  }
+
+  const statsSection = document.getElementById('stats');
+  if (statsSection) {
+    new IntersectionObserver((entries, obs) => {
+      if (!entries.some(e => e.isIntersecting)) return;
+      obs.disconnect();
+
+      const lcEl = document.getElementById('lc-count');
+      countUp(document.getElementById('hk-count'), 7, 1400);
+      layoutRing();
+
+      // The ring traces the card's own outline. Sizing the viewBox to the
+      // card's pixel box keeps the rounded corners undistorted under
+      // preserveAspectRatio="none".
+      const ring = document.getElementById('lc-ring');
+      const segs = ring ? {
+        easy:   ring.querySelector('.ring--easy'),
+        medium: ring.querySelector('.ring--medium'),
+        hard:   ring.querySelector('.ring--hard'),
+      } : null;
+
+      // Every ring on the page, not just the LeetCode one: each is sized to
+      // its own card so the rounded corners stay true under
+      // preserveAspectRatio="none".
+      function layoutRing() {
+        for (const svg of document.querySelectorAll('.stat__ring')) {
+          const host = svg.closest('.stat');
+          if (!host) continue;
+          const w = host.clientWidth, h = host.clientHeight;
+          if (!w || !h) continue;
+          svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+          for (const el of svg.querySelectorAll('rect')) {
+            el.setAttribute('x', 1);
+            el.setAttribute('y', 1);
+            el.setAttribute('width',  Math.max(0, w - 2));
+            el.setAttribute('height', Math.max(0, h - 2));
+            el.setAttribute('rx', 17);
+          }
+        }
+      }
+
+      // Stores each segment's share as --len rather than painting it. The
+      // stylesheet applies it only under .stat:hover, so the card sits
+      // colourless until you point at it and the ring then draws itself in.
+      function drawRing(stats) {
+        if (!segs) return;
+        const total = Math.max(stats.easy + stats.medium + stats.hard, 1);
+        const pct = k => stats[k] / total * 100;
+        const GAP = 0.8;                  // hairline between segments
+        let at = 0;
+        for (const k of ['easy', 'medium', 'hard']) {
+          segs[k].style.setProperty('--len', Math.max(pct(k) - GAP, 0));
+          segs[k].style.strokeDashoffset = -at;   // where the segment starts
+          at += pct(k);
+        }
+      }
+
+      // Only the headline total rounds up to the next ten; the split stays exact.
+      const paint = (stats, ms) => {
+        countUp(lcEl, roundUpTen(stats.total), ms);
+        const peak = Math.max(stats.easy, stats.medium, stats.hard, 1);
+        ['easy', 'medium', 'hard'].forEach(k => {
+          document.getElementById('n-' + k).textContent = stats[k];
+          document.getElementById('f-' + k).style.width = (stats[k] / peak * 100) + '%';
+        });
+        layoutRing();
+        drawRing(stats);
+      };
+
+      addEventListener('resize', layoutRing, { passive: true });
+
+      paint(LC_FALLBACK, 1800);
+      loadLeetCode().then(stats => { if (stats) paint(stats, 900); });
+    }, { threshold: 0.35 }).observe(statsSection);
+  }
+
+  /* ---------------- cursor light ---------------- */
+  // Trails the pointer with an eased follow, so it drifts in rather than
+  // snapping to the cursor. Fine pointers only -- there is nothing to follow
+  // on touch, and it would just sit where the last tap landed.
+  const cursorLight = document.getElementById('cursorlight');
+  if (cursorLight
+      && matchMedia('(pointer: fine)').matches
+      && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    let tx = 0, ty = 0, cx = 0, cy = 0, placed = false;
+
+    addEventListener('pointermove', e => {
+      tx = e.clientX; ty = e.clientY;
+      if (!placed) {                 // first sighting: start under the cursor
+        cx = tx; cy = ty; placed = true;
+        cursorLight.style.opacity = '1';
+      }
+    }, { passive: true });
+
+    document.addEventListener('pointerleave', () => { cursorLight.style.opacity = '0'; });
+    document.addEventListener('pointerenter', () => { if (placed) cursorLight.style.opacity = '1'; });
+
+    const follow = () => {
+      cx += (tx - cx) * 0.11;
+      cy += (ty - cy) * 0.11;
+      cursorLight.style.transform = `translate3d(${cx}px, ${cy}px, 0)`;
+      requestAnimationFrame(follow);
+    };
+    requestAnimationFrame(follow);
+  }
+
+  const yr = document.getElementById('year');
+  if (yr) yr.textContent = new Date().getFullYear();
+})();
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+  const stage = document.getElementById('stage');
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Never fail silently: a blank stage is indistinguishable from a black cube.
+  if (typeof THREE === 'undefined') {
+    stage.style.filter = 'none';
+    stage.style.animation = 'none';
+    stage.style.opacity = '1';
+    stage.innerHTML = '<p style="display:grid;place-items:center;height:100%;margin:0;'
+      + 'font-size:13px;line-height:1.6;color:#e06a5a;text-align:center">'
+      + 'Three.js failed to load.<br>Check the network tab for the cdnjs request.</p>';
+    return;
+  }
+
+  // ---- tunables --------------------------------------------------------
+  const CFG = {
+    gap:          1.052,  // centre-to-centre spacing of cubies (1 = touching)
+    radius:       0.098,  // corner rounding of each cubie
+    spinSpeed:    0.88,   // radians / second around the tumble axis
+    tiltX:        0.17,
+    tiltZ:        0.06,
+    exposure:     0.80,
+    twistEvery: [0.10, 0.34], // seconds of stillness between slice turns
+    twistTime:   0.25,    // seconds for one 90 degree turn
+    doubleOdds:  0.18,    // chance a turn goes 180 instead of 90
+    fitMargin:    1.02,   // breathing room around the cube, 1 = tight fit
+    keyPower:     2.35,   // brightness of the near key light
+    keyRange:     15,     // world units at which the key reaches zero
+    keyDecay:     1.75,   // how sharply it falls off across that range
+    keySwing:     1.15,   // how far the key drifts diagonally, in world units
+    keyPeriod:    13,     // seconds for one full pass of that drift
+    axisHold:  [2.2, 4.5],// seconds on one diagonal before switching
+    axisBlend:    1.0,    // seconds to ease across onto the next one
+  };
+  // ----------------------------------------------------------------------
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = CFG.exposure;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  stage.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
+  camera.position.set(0, 0, 11);
+
+  // A slice turn rotates about an axis through the centre, so every corner keeps
+  // its distance from the origin -- the bounding sphere never changes size.
+  const FIT_RADIUS = Math.sqrt(3) * (CFG.gap + 0.5);
+
+  function fitCamera() {
+    const vFov = camera.fov * Math.PI / 180;
+    const hFov = 2 * Math.atan(Math.tan(vFov / 2) * camera.aspect);
+    // fit against whichever axis is tighter, so it never crops on either
+    const fov = Math.min(vFov, hFov);
+    camera.position.z = (FIT_RADIUS * CFG.fitMargin) / Math.sin(fov / 2);
+  }
+
+  // ---- procedural texture helpers -------------------------------------
+  const MAX_ANISO = renderer.capabilities.getMaxAnisotropy();
+
+  function canvasTex(size, paint, repeat) {
+    const c = document.createElement('canvas');
+    c.width = c.height = size;
+    paint(c.getContext('2d'), size);
+    const t = new THREE.CanvasTexture(c);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    // without this, fine line/speckle detail aliases into hard white scratches
+    t.anisotropy = MAX_ANISO;
+    t.minFilter = THREE.LinearMipmapLinearFilter;
+    t.generateMipmaps = true;
+    if (repeat) t.repeat.set(repeat, repeat);
+    return t;
+  }
+
+  // Every finish bakes its pattern and a soft inset edge shadow into one map.
+  // The edge shading is what sells contact between neighbouring cubies -- a
+  // shadow map can't resolve a seam this tight.
+  function bakedMap(paint) {
+    return canvasTex(512, (g, s) => {
+      paint(g, s);
+      const b = s * 0.17;
+      const band = (x0, y0, x1, y1) => {
+        const q = g.createLinearGradient(x0, y0, x1, y1);
+        q.addColorStop(0, 'rgba(0,0,0,0.5)');
+        q.addColorStop(1, 'rgba(0,0,0,0)');
+        return q;
+      };
+      g.fillStyle = band(0, 0, b, 0);      g.fillRect(0, 0, b, s);
+      g.fillStyle = band(s, 0, s - b, 0);  g.fillRect(s - b, 0, b, s);
+      g.fillStyle = band(0, 0, 0, b);      g.fillRect(0, 0, s, b);
+      g.fillStyle = band(0, s, 0, s - b);  g.fillRect(0, s - b, s, b);
+    });
+  }
+
+  const flat = c => (g, s) => { g.fillStyle = c; g.fillRect(0, 0, s, s); };
+
+  // Fine micro-mesh: a dense offset dot grid, the bright silver tiles.
+  const weavePaint = (g, s) => {
+    g.fillStyle = '#d6d6d6';
+    g.fillRect(0, 0, s, s);
+    const step = 7.2, rowH = step * 0.87, r = 2.5;
+    for (let ry = 0; ry * rowH < s + step; ry++) {
+      const y = ry * rowH;
+      const off = ry % 2 ? step / 2 : 0;
+      for (let x = -step; x < s + step; x += step) {
+        g.fillStyle = '#1c1c1c';
+        g.beginPath();
+        g.arc(x + off, y, r, 0, 6.283);
+        g.fill();
+      }
+    }
+  };
+
+  // Coarse ventilation grille: big bored holes, each with a bright lip so the
+  // edge catches light and the bore reads as depth rather than a flat dot.
+  const perfPaint = (g, s) => {
+    g.fillStyle = '#c4c4c4';
+    g.fillRect(0, 0, s, s);
+    const step = 27, rowH = step * 0.87, r = 9.6;
+    for (let ry = 0; ry * rowH < s + step; ry++) {
+      const y = ry * rowH;
+      const off = ry % 2 ? step / 2 : 0;
+      for (let x = -step; x < s + step; x += step) {
+        const cx = x + off;
+        const ring = g.createRadialGradient(cx, y, r * 0.3, cx, y, r);
+        ring.addColorStop(0,    '#070707');   // bore
+        ring.addColorStop(0.60, '#0d0d0d');
+        ring.addColorStop(0.84, '#9a9a9a');   // lip catch-light
+        ring.addColorStop(1,    'rgba(196,196,196,0)');
+        g.fillStyle = ring;
+        g.beginPath();
+        g.arc(cx, y, r, 0, 6.283);
+        g.fill();
+      }
+    }
+  };
+
+  // Fine bright dust over a dark panel.
+  const dustPaint = (g, s) => {
+    g.fillStyle = '#2e2e2e';
+    g.fillRect(0, 0, s, s);
+    for (let i = 0; i < 16000; i++) {
+      g.fillStyle = 'rgba(255,255,255,' + (0.15 + Math.random() * 0.45) + ')';
+      g.beginPath();
+      g.arc(Math.random() * s, Math.random() * s, Math.random() * 0.7 + 0.18, 0, 6.283);
+      g.fill();
+    }
+  };
+
+  const weaveMap = bakedMap(weavePaint);
+  const perfMap  = bakedMap(perfPaint);
+  const dustMap  = bakedMap(dustPaint);
+  const plainMap = bakedMap(flat('#ffffff'));
+  [weaveMap, perfMap, dustMap, plainMap].forEach(t => { t.encoding = THREE.sRGBEncoding; });
+
+  // greyscale versions drive roughness / relief
+  const weaveRough = canvasTex(512, weavePaint);
+  const perfRough  = canvasTex(512, perfPaint);
+  const dustRough  = canvasTex(512, dustPaint);
+
+  // ---- environment: a generated softbox, PMREM'd for the reflections ---
+  const envSource = canvasTex(1024, (g, s) => {
+    const h = s / 2;
+    const bg = g.createLinearGradient(0, 0, 0, h);
+    bg.addColorStop(0, '#1c1c1c');
+    bg.addColorStop(0.55, '#0a0a0a');
+    bg.addColorStop(1, '#040404');
+    g.fillStyle = bg;
+    g.fillRect(0, 0, s, h);
+
+    const blob = (cx, cy, rx, ry, a) => {
+      const rg = g.createRadialGradient(cx, cy, 0, cx, cy, rx);
+      rg.addColorStop(0, 'rgba(255,255,255,' + a + ')');
+      rg.addColorStop(1, 'rgba(255,255,255,0)');
+      g.save();
+      g.translate(cx, cy);
+      g.scale(1, ry / rx);
+      g.translate(-cx, -cy);
+      g.fillStyle = rg;
+      g.fillRect(0, 0, s, h);
+      g.restore();
+    };
+    blob(s * 0.28, h * 0.26, s * 0.52, h * 0.70, 0.40); // key softbox
+    blob(s * 0.76, h * 0.42, s * 0.30, h * 0.52, 0.15); // rim
+    blob(s * 0.50, h * 0.88, s * 0.45, h * 0.30, 0.07); // floor bounce
+  });
+  envSource.mapping = THREE.EquirectangularReflectionMapping;
+
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  pmrem.compileEquirectangularShader();
+  scene.environment = pmrem.fromEquirectangular(envSource).texture;
+  envSource.dispose();
+  pmrem.dispose();
+
+  // ---- lights ----------------------------------------------------------
+  // A CLOSE point light, not a distant directional one. Directional rays are
+  // parallel, so they light a whole face evenly; a nearby source changes both
+  // its direction and its distance across a single face, which is what gives
+  // each tile its gradient and lets the far side of the cube fall to nothing.
+  const key = new THREE.PointLight(0xffffff, CFG.keyPower, CFG.keyRange, CFG.keyDecay);
+  const KEY_HOME = new THREE.Vector3(-3.0, 2.7, 3.7);
+  key.position.copy(KEY_HOME);
+  key.castShadow = true;
+  key.shadow.mapSize.set(1024, 1024);   // point lights render 6 faces
+  key.shadow.camera.near = 0.5;
+  key.shadow.camera.far = 20;
+  key.shadow.radius = 4;
+  key.shadow.bias = -0.0006;
+  key.shadow.normalBias = 0.025;
+  scene.add(key);
+
+  const rim = new THREE.DirectionalLight(0xffffff, 0.13);
+  rim.position.set(6, 1.5, -4);
+  scene.add(rim);
+
+  const fill = new THREE.DirectionalLight(0xffffff, 0.035);
+  fill.position.set(1, -4, 3);
+  scene.add(fill);
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.016));
+
+  // ---- rounded box geometry (RoundedBoxGeometry isn't in the core UMD) --
+  function roundedBox(size, radius, seg) {
+    const geo = new THREE.BoxGeometry(size, size, size, seg, seg, seg);
+    const pos = geo.attributes.position;
+    const nor = geo.attributes.normal;
+    const half = size / 2;
+    const inner = half - radius;
+    const v = new THREE.Vector3();
+    const inr = new THREE.Vector3();
+
+    for (let i = 0; i < pos.count; i++) {
+      v.fromBufferAttribute(pos, i);
+      inr.set(
+        Math.max(-inner, Math.min(inner, v.x)),
+        Math.max(-inner, Math.min(inner, v.y)),
+        Math.max(-inner, Math.min(inner, v.z))
+      );
+      const dir = v.clone().sub(inr).normalize();
+      v.copy(inr).addScaledVector(dir, radius);
+      pos.setXYZ(i, v.x, v.y, v.z);
+      nor.setXYZ(i, dir.x, dir.y, dir.z);
+    }
+    pos.needsUpdate = true;
+    nor.needsUpdate = true;
+    return geo;
+  }
+
+  // The contrast in the reference comes from splitting the set in two:
+  // smooth dielectric panels stay near-black because they only reflect a dark
+  // room, while TEXTURED metal flares bright. Texture is what stops a bright
+  // metal face from clipping to flat white, so only textured finishes go metal.
+  const finishes = [
+    // matte panel -- stays black
+    new THREE.MeshPhysicalMaterial({
+      color: 0x090909, roughness: 0.92, metalness: 0.05,
+      map: plainMap, envMapIntensity: 0.5,
+    }),
+    // deep gloss panel -- near-pure black with a crisp bevel highlight
+    new THREE.MeshPhysicalMaterial({
+      color: 0x040404, roughness: 0.46, metalness: 0.1,
+      clearcoat: 0.4, clearcoatRoughness: 0.3,
+      map: plainMap, envMapIntensity: 0.6,
+    }),
+    // fine micro-mesh -- the bright silver tiles
+    new THREE.MeshPhysicalMaterial({
+      color: 0x5c5c5c, metalness: 0.9, roughness: 0.38,
+      map: weaveMap, envMapIntensity: 0.9,
+      roughnessMap: weaveRough, bumpMap: weaveRough, bumpScale: 0.003,
+    }),
+    // coarse grille -- deep bump so the bores actually read as holes
+    new THREE.MeshPhysicalMaterial({
+      color: 0x444444, metalness: 0.82, roughness: 0.46,
+      map: perfMap, envMapIntensity: 0.7,
+      roughnessMap: perfRough, bumpMap: perfRough, bumpScale: 0.034,
+    }),
+    // dusted metal
+    new THREE.MeshPhysicalMaterial({
+      color: 0x2a2a2a, metalness: 0.8, roughness: 0.54,
+      map: dustMap, envMapIntensity: 0.5,
+      roughnessMap: dustRough, bumpMap: dustRough, bumpScale: 0.0025,
+    }),
+  ];
+
+  // Weighted so matte panels dominate and the perforated grilles read as a
+  // recurring feature rather than a rarity. Index order matches `finishes`.
+  const FINISH_WEIGHTS = [0.16, 0.22, 0.24, 0.22, 0.16];
+  function pickFinish() {
+    let r = Math.random();
+    for (let i = 0; i < FINISH_WEIGHTS.length; i++) {
+      r -= FINISH_WEIGHTS[i];
+      if (r <= 0) return finishes[i];
+    }
+    return finishes[0];
+  }
+
+  // ---- build the 3x3x3 lattice ----------------------------------------
+  const pivot = new THREE.Group();   // holds the fixed tilt
+  const spin = new THREE.Group();    // continuously rotates
+  pivot.add(spin);
+  scene.add(pivot);
+  pivot.rotation.x = CFG.tiltX;
+  pivot.rotation.z = CFG.tiltZ;
+
+  // Spinning on Y alone reads as a turntable. Rotating about a body diagonal
+  // -- the line through two opposite corners -- makes the whole cube tumble,
+  // and every face passes through the light instead of just the side ones.
+  // A cube has four such diagonals; drifting between them stops the motion
+  // settling into one predictable loop. None of the four is the negative of
+  // another, so easing between any two never collapses to a zero vector.
+  const DIAGONALS = [
+    new THREE.Vector3( 1,  1,  1).normalize(),
+    new THREE.Vector3( 1,  1, -1).normalize(),
+    new THREE.Vector3( 1, -1,  1).normalize(),
+    new THREE.Vector3(-1,  1,  1).normalize(),
+  ];
+  let axisIdx = 0;
+  let axisHold = 5;                              // seconds left on this diagonal
+  const spinAxis   = DIAGONALS[0].clone();       // the live axis
+  const axisTarget = DIAGONALS[0].clone();
+  const deltaQ = new THREE.Quaternion();
+
+  const geo = roundedBox(1, CFG.radius, 10);
+  const cubies = [];
+
+  for (let x = -1; x <= 1; x++) {
+    for (let y = -1; y <= 1; y++) {
+      for (let z = -1; z <= 1; z++) {
+        // each of the six faces gets its own finish, like the reference
+        const mats = [];
+        for (let f = 0; f < 6; f++) mats.push(pickFinish());
+
+        const mesh = new THREE.Mesh(geo, mats);
+        mesh.castShadow = mesh.receiveShadow = true;
+        mesh.position.set(x * CFG.gap, y * CFG.gap, z * CFG.gap);
+        spin.add(mesh);
+
+        cubies.push(mesh);
+      }
+    }
+  }
+
+  // ---- slice turns -----------------------------------------------------
+  // A real Rubik's turn: grab the nine cubies sharing a coordinate, parent them
+  // to a temporary pivot at the cube's centre, rotate the pivot 90/180 degrees,
+  // then hand them back to the lattice and snap off the float drift.
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const AXIS_NAMES = ['x', 'y', 'z'];
+  const QUARTER = Math.PI / 2;
+
+  let idle = 0.5;     // seconds until the next turn starts
+  let turn = null;    // the turn in flight, if any
+
+  function startTurn() {
+    const axis = AXIS_NAMES[(Math.random() * 3) | 0];
+    const slice = ((Math.random() * 3) | 0) - 1;           // -1, 0 or 1
+
+    const members = cubies.filter(
+      m => Math.round(m.position[axis] / CFG.gap) === slice
+    );
+    if (members.length !== 9) { idle = 0.2; return; }       // drifted: skip a beat
+
+    const pivot = new THREE.Group();
+    spin.add(pivot);
+    for (const m of members) pivot.attach(m);
+
+    const quarters = Math.random() < CFG.doubleOdds ? 2 : 1;
+    turn = {
+      pivot, members, axis,
+      angle: QUARTER * quarters * (Math.random() < 0.5 ? 1 : -1),
+      t: 0,
+      dur: CFG.twistTime * quarters,
+    };
+  }
+
+  function finishTurn() {
+    const { pivot, members, axis, angle } = turn;
+    pivot.rotation[axis] = angle;
+    pivot.updateMatrixWorld(true);
+
+    for (const m of members) {
+      spin.attach(m);
+      // snap position back onto the lattice
+      m.position.set(
+        Math.round(m.position.x / CFG.gap) * CFG.gap,
+        Math.round(m.position.y / CFG.gap) * CFG.gap,
+        Math.round(m.position.z / CFG.gap) * CFG.gap
+      );
+      // snap orientation: after an exact quarter turn the rotation matrix is a
+      // signed permutation, so rounding its elements removes accumulated error
+      const mtx = new THREE.Matrix4().makeRotationFromQuaternion(m.quaternion);
+      for (let i = 0; i < 16; i++) mtx.elements[i] = Math.round(mtx.elements[i]);
+      m.quaternion.setFromRotationMatrix(mtx);
+    }
+
+    spin.remove(pivot);
+    turn = null;
+    idle = rand(CFG.twistEvery[0], CFG.twistEvery[1]);
+  }
+
+  // slow start, slow stop — a turn that eases at both ends reads as mechanical
+  const easeInOut = t => t < 0.5
+    ? 4 * t * t * t
+    : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+  // ---- loop ------------------------------------------------------------
+  let last = performance.now();
+
+  function resize() {
+    const w = stage.clientWidth, h = stage.clientHeight;
+    if (!w || !h) return;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    fitCamera();
+    camera.updateProjectionMatrix();
+  }
+
+  function frame(now) {
+    const dt = Math.min((now - last) / 1000, 0.05);
+    last = now;
+
+    axisHold -= dt;
+    if (axisHold <= 0) {
+      let n;
+      do { n = (Math.random() * DIAGONALS.length) | 0; } while (n === axisIdx);
+      axisIdx = n;
+      axisTarget.copy(DIAGONALS[n]);
+      axisHold = rand(CFG.axisHold[0], CFG.axisHold[1]);
+    }
+    // exponential approach, so the changeover is a drift rather than a snap
+    spinAxis.lerp(axisTarget, Math.min(1, dt / CFG.axisBlend)).normalize();
+
+    // Accumulate a small delta each frame instead of rebuilding the whole
+    // orientation from an angle: that way changing the axis only steers where
+    // the cube goes next, and never jumps it to a new pose.
+    deltaQ.setFromAxisAngle(spinAxis, CFG.spinSpeed * dt);
+    spin.quaternion.multiply(deltaQ).normalize();
+
+    // The key travels a slow diagonal: x and y share one phase so the lamp
+    // sweeps corner to corner rather than side to side, and z trails a quarter
+    // cycle behind so the falloff breathes instead of just sliding across.
+    const ph = (now / 1000) * (Math.PI * 2 / CFG.keyPeriod);
+    key.position.set(
+      KEY_HOME.x + Math.sin(ph) * CFG.keySwing,
+      KEY_HOME.y + Math.sin(ph) * CFG.keySwing * 0.72,
+      KEY_HOME.z + Math.sin(ph - Math.PI / 2) * CFG.keySwing * 0.45
+    );
+
+    if (turn) {
+      turn.t = Math.min(1, turn.t + dt / turn.dur);
+      turn.pivot.rotation[turn.axis] = easeInOut(turn.t) * turn.angle;
+      if (turn.t >= 1) finishTurn();
+    } else {
+      idle -= dt;
+      if (idle <= 0) startTurn();
+    }
+
+    renderer.render(scene, camera);
+    if (!reduced) requestAnimationFrame(frame);
+  }
+
+  new ResizeObserver(resize).observe(stage);
+  resize();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

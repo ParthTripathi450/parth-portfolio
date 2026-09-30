@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Parth Tripathi">
+  <rect width="64" height="64" rx="14" fill="#131313"/>
+  <g fill="none" stroke="#efefef" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round">
+    <!-- isometric cube: hexagon silhouette -->
+    <path d="M32 10 L50 21 L50 43 L32 54 L14 43 L14 21 Z"/>
+    <!-- the three visible edges meeting at the near corner -->
+    <path d="M32 32 L32 10 M32 32 L14 43 M32 32 L50 43"/>
+  </g>
+</svg>

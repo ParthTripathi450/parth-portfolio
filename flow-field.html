@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Converging Flow Hero</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#1b1b1b;
+    --ink:#ffffff;
+    --muted:#8a8a8a;
+    --accent:#e2782b;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .hero{
+    position:relative;
+    min-height:100svh;
+    display:grid;
+    place-items:center;
+    overflow:hidden;
+    isolation:isolate;
+  }
+
+  /* the animated field sits behind everything */
+  #field{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    display:block;
+    z-index:-2;
+  }
+  /* soft vignette so the fan dissolves into the page edges */
+  .hero::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    z-index:-1;
+    pointer-events:none;
+    background:
+      radial-gradient(120% 90% at 50% 45%, transparent 35%, rgba(27,27,27,.55) 100%),
+      linear-gradient(to bottom, rgba(27,27,27,.9) 0%, transparent 18%, transparent 72%, var(--bg) 100%);
+  }
+
+  .hero__inner{
+    position:relative;
+    text-align:center;
+    padding:0 24px;
+    max-width:760px;
+  }
+
+  h1{
+    font-family:"Instrument Serif",Georgia,serif;
+    font-weight:400;
+    font-size:clamp(2.4rem,6.2vw,4.4rem);
+    line-height:1.02;
+    letter-spacing:-0.02em;
+    margin:0 0 1.1rem;
+  }
+
+  .sub{
+    margin:0 auto 2.2rem;
+    max-width:32em;
+    font-size:clamp(.95rem,1.4vw,1.075rem);
+    line-height:1.6;
+    color:var(--muted);
+  }
+  .sub b{color:var(--ink);font-weight:400}
+
+  .cta{
+    display:inline-block;
+    padding:.72rem 1.35rem;
+    border-radius:999px;
+    background:var(--ink);
+    color:#111;
+    font-size:.9rem;
+    text-decoration:none;
+    transition:transform .25s ease, box-shadow .25s ease;
+  }
+  .cta:hover{transform:translateY(-1px);box-shadow:0 8px 28px rgba(0,0,0,.45)}
+
+  @media (prefers-reduced-motion:reduce){
+    .cta{transition:none}
+  }
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <canvas id="field" aria-hidden="true"></canvas>
+  <div class="hero__inner">
+    <h1>Complex workflows.<br>Zero room for error.</h1>
+    <p class="sub">A converging-flow background rendered on <b>canvas</b> — a perspective fan of hairlines with <b>particles</b> riding the streamlines toward the focus.</p>
+    <a class="cta" href="#">Book a demo</a>
+  </div>
+</section>
+
+<script>
+(() => {
+  const canvas = document.getElementById('field');
+  const ctx = canvas.getContext('2d');
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---- tunables -------------------------------------------------------
+  const CFG = {
+    lineCount:      220,     // strokes in the fan
+    spread:         3.4,     // vertical spread at the left edge, in screen heights
+    focus:          [0.68, 0.46], // vanishing point, as a fraction of w/h
+    lineAlpha:      0.05,    // base opacity of a hairline
+    lineWidth:      1,       // css px
+    warpAmount:     0.10,    // how much the fan bows, in screen heights
+    warpSpeed:      0.055,   // bow oscillation speed
+    driftSpeed:     0.018,   // vertical drift of the whole fan
+    particleCount:  34,
+    particleSpeed:  [0.045, 0.12], // progress per second, along a line
+    particleTail:   0.055,   // tail length in progress units
+    accent:         [226, 120, 43],
+    inward:         true,    // travel toward the focus; false = away from it
+  };
+  // ---------------------------------------------------------------------
+
+  let w = 0, h = 0, dpr = 1;
+  let lines = [];
+  let particles = [];
+
+  const rand = (a, b) => a + Math.random() * (b - a);
+
+  function resize() {
+    const r = canvas.getBoundingClientRect();
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    w = r.width; h = r.height;
+    canvas.width  = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    build();
+  }
+
+  function build() {
+    lines = [];
+    for (let i = 0; i < CFG.lineCount; i++) {
+      const t = i / (CFG.lineCount - 1);       // 0..1 across the fan
+      lines.push({
+        // where the line starts, off the left edge
+        y0: (t - 0.5) * CFG.spread * h + h * 0.5,
+        // each line bows on its own phase so the fan never moves as one sheet
+        phase: t * Math.PI * 2.4 + rand(-0.25, 0.25),
+        bow: (t - 0.5) * 2,                    // -1..1, outer lines bow more
+        alpha: CFG.lineAlpha * rand(0.6, 1.35),
+      });
+    }
+
+    particles = [];
+    for (let i = 0; i < CFG.particleCount; i++) particles.push(spawn(true));
+  }
+
+  function spawn(initial) {
+    return {
+      line: (Math.random() * lines.length) | 0,
+      t: initial ? Math.random() : rand(-0.12, 0),
+      speed: rand(CFG.particleSpeed[0], CFG.particleSpeed[1]),
+      size: rand(0.75, 1.6),
+      bright: rand(0.55, 1),
+    };
+  }
+
+  // Quadratic bezier from the left edge to the focus point.
+  // Returns [x, y] at progress p (0 = left edge, 1 = focus).
+  function pointOn(line, p, time) {
+    const fx = CFG.focus[0] * w;
+    const fy = CFG.focus[1] * h + Math.sin(time * CFG.driftSpeed * Math.PI * 2) * h * 0.035;
+
+    const ax = -w * 0.06;
+    const ay = line.y0 + Math.sin(time * CFG.driftSpeed * Math.PI * 2 + line.phase) * h * 0.02;
+
+    // control point pulls the line into a gentle S toward the focus
+    const bow = Math.sin(time * CFG.warpSpeed * Math.PI * 2 + line.phase) * CFG.warpAmount * h * line.bow;
+    const cx = ax + (fx - ax) * 0.55;
+    const cy = ay + (fy - ay) * 0.35 + bow;
+
+    const u = 1 - p;
+    return [
+      u * u * ax + 2 * u * p * cx + p * p * fx,
+      u * u * ay + 2 * u * p * cy + p * p * fy,
+    ];
+  }
+
+  function drawLine(line, time) {
+    const a = pointOn(line, 0, time);
+    const m = pointOn(line, 0.5, time);
+    const f = pointOn(line, 1, time);
+    // reconstruct the bezier control point from the midpoint
+    const cx = 2 * m[0] - 0.5 * (a[0] + f[0]);
+    const cy = 2 * m[1] - 0.5 * (a[1] + f[1]);
+
+    ctx.beginPath();
+    ctx.moveTo(a[0], a[1]);
+    ctx.quadraticCurveTo(cx, cy, f[0], f[1]);
+    ctx.strokeStyle = `rgba(255,255,255,${line.alpha})`;
+    ctx.stroke();
+  }
+
+  function drawParticle(p, time) {
+    const line = lines[p.line];
+    if (!line) return;
+
+    const head = CFG.inward ? p.t : 1 - p.t;
+    const tail = CFG.inward ? p.t - CFG.particleTail : 1 - p.t + CFG.particleTail;
+    if (head < 0 || head > 1) return;
+
+    const [hx, hy] = pointOn(line, Math.min(Math.max(head, 0), 1), time);
+    const [tx, ty] = pointOn(line, Math.min(Math.max(tail, 0), 1), time);
+
+    // fade in at the start of the run and out as it reaches the focus
+    const fade = Math.min(1, p.t / 0.12) * Math.min(1, (1 - p.t) / 0.25);
+    if (fade <= 0) return;
+
+    const [r, g, b] = CFG.accent;
+    const grad = ctx.createLinearGradient(tx, ty, hx, hy);
+    grad.addColorStop(0, `rgba(${r},${g},${b},0)`);
+    grad.addColorStop(1, `rgba(${r},${g},${b},${0.95 * fade * p.bright})`);
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.lineCap = 'round';
+    ctx.lineWidth = p.size;
+    ctx.strokeStyle = grad;
+    ctx.beginPath();
+    ctx.moveTo(tx, ty);
+    ctx.lineTo(hx, hy);
+    ctx.stroke();
+
+    // hot core
+    ctx.lineWidth = p.size * 0.5;
+    ctx.strokeStyle = `rgba(255,${Math.min(255, g + 70)},${b + 40},${0.6 * fade * p.bright})`;
+    ctx.beginPath();
+    ctx.moveTo(hx, hy);
+    ctx.lineTo(hx - (hx - tx) * 0.25, hy - (hy - ty) * 0.25);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  let last = performance.now();
+
+  function frame(now) {
+    const dt = Math.min((now - last) / 1000, 0.05);
+    last = now;
+    const time = now / 1000;
+
+    ctx.clearRect(0, 0, w, h);
+    ctx.lineWidth = CFG.lineWidth;
+    ctx.lineCap = 'butt';
+
+    for (const line of lines) drawLine(line, time);
+
+    for (let i = 0; i < particles.length; i++) {
+      const p = particles[i];
+      p.t += p.speed * dt;
+      if (p.t > 1.05) particles[i] = spawn(false);
+      drawParticle(particles[i], time);
+    }
+
+    if (!reduced) requestAnimationFrame(frame);
+  }
+
+  const ro = new ResizeObserver(resize);
+  ro.observe(canvas);
+  resize();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
