@@ -336,6 +336,8 @@
   .card--white:hover {background:rgba(248,248,246,.075);box-shadow:0 20px 60px rgba(255,255,255,.09)}
   .card--teal:hover  {background:rgba(160,205,196,.08); box-shadow:0 20px 60px rgba(28,150,128,.15)}
   .card--amber:hover {background:rgba(214,196,164,.08); box-shadow:0 20px 60px rgba(180,120,40,.15)}
+  .card--violet:hover{background:rgba(196,182,224,.085);box-shadow:0 20px 60px rgba(124,88,214,.17)}
+  .card--indigo:hover{background:rgba(166,178,222,.085);box-shadow:0 20px 60px rgba(58,72,190,.17)}
 
   .card__shot{
     position:relative;width:100%;aspect-ratio:16/10;
@@ -366,6 +368,9 @@
     transition:background .2s ease,border-color .2s ease;
   }
   .live:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.2)}
+  /* stands in for the link when a project has nothing public to point at */
+  .live--quiet{color:var(--dim);border-style:dashed;cursor:default}
+  .live--quiet:hover{background:none;border-color:var(--hair)}
   .live svg{width:11px;height:11px}
 
   /* ---------- stats ---------- */
@@ -600,6 +605,23 @@ const ICONS = {"cpp":"data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTI4IDEy
   /* ---------------- content ---------------- */
   const PROJECTS = [
     {
+      title: 'Woiser — AI speech and voice cloning',
+      shot: 'images/proj6.jpg',
+      desc: 'A text-to-speech and voice cloning platform. Paste a script, pick or clone a voice, and generate speech for narration, ads, games, podcasts or film dialogue.',
+      url: 'https://resonance-nine-omega.vercel.app/',
+      stack: [],
+      tone: 'violet',
+    },
+    {
+      title: 'Agentic Commerce',
+      shot: 'images/proj7.jpg',
+      desc: 'A marketplace built for AI buyers. Describe what you want in plain language and the agent searches every merchant\'s machine-readable catalog, ranks the options against published criteria, and explains why it picked one over the rest.',
+      url: null,
+      stack: [],
+      note: 'In development',
+      tone: 'indigo',
+    },
+    {
       title: '3D e-commerce keyboard store',
       shot: 'images/proj5.jpg',
       desc: 'An interactive, 3D-enhanced e-commerce platform for a fictional keyboard brand called Nimbus.',
@@ -721,11 +743,13 @@ const ICONS = {"cpp":"data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTI4IDEy
         <h3 class="card__title">${p.title}</h3>
         <p class="card__desc">${p.desc}</p>
         <div class="card__foot">
-          <div class="stack">${p.stack.map(s =>
+          <div class="stack">${(p.stack || []).map(s =>
             `<img src="${ICONS[s]}" alt="${s}" title="${s}" width="19" height="19">`).join('')}</div>
-          <a class="live" href="${p.url}" target="_blank" rel="noopener">See it live
-            <svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M3 9L9 3M9 3H4.5M9 3v4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </a>
+          ${p.url
+            ? `<a class="live" href="${p.url}" target="_blank" rel="noopener">See it live
+                 <svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M3 9L9 3M9 3H4.5M9 3v4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+               </a>`
+            : `<span class="live live--quiet">${p.note || 'Not public yet'}</span>`}
         </div>
       </article>`).join('');
 
