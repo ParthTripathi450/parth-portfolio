@@ -441,6 +441,21 @@
     font-variant-numeric:tabular-nums;
   }
   .stat__label{margin-top:12px;font-size:10.5px;font-weight:300;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+  /* separates two figures sharing one card */
+  .stat__split{
+    height:1px;margin:24px 0 22px;
+    background:linear-gradient(90deg, rgba(255,255,255,.12), transparent 70%);
+  }
+  .stat__issuers{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .stat__issuers span{
+    font-size:9.5px;font-weight:300;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--dim);
+    border:1px solid var(--hair);border-radius:999px;
+    padding:4px 11px;
+    transition:color .35s ease, border-color .35s ease;
+  }
+  .stat:hover .stat__issuers span{color:#cfcfcf;border-color:rgba(255,255,255,.22)}
+
   .bars{margin-top:20px;display:flex;flex-direction:column;gap:9px}
   .bar{display:grid;grid-template-columns:62px 1fr auto;align-items:center;gap:11px;font-size:.76rem;color:var(--dim)}
   .bar__track{height:3px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden}
@@ -559,6 +574,12 @@
         </svg>
         <div class="stat__num" id="hk-count">0</div>
         <div class="stat__label">Hackathons attended</div>
+
+        <div class="stat__split"></div>
+
+        <div class="stat__num" id="cert-count">0</div>
+        <div class="stat__label">Industry certifications</div>
+        <div class="stat__issuers"><span>IBM</span><span>AWS</span></div>
       </div>
     </div>
 
@@ -818,14 +839,14 @@ const ICONS = {"cpp":"data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTI4IDEy
         ({ total: d.solvedProblem, easy: d.easySolved, medium: d.mediumSolved, hard: d.hardSolved }) },
   ];
 
-  function countUp(el, target, ms) {
+  function countUp(el, target, ms, suffix = '+') {
     const t0 = performance.now();
     const step = now => {
       const p = Math.min((now - t0) / ms, 1);
       const eased = 1 - Math.pow(1 - p, 3);
-      el.textContent = Math.floor(eased * target) + '+';
+      el.textContent = Math.floor(eased * target) + suffix;
       if (p < 1) requestAnimationFrame(step);
-      else el.textContent = target + '+';
+      else el.textContent = target + suffix;
     };
     requestAnimationFrame(step);
   }
@@ -853,6 +874,8 @@ const ICONS = {"cpp":"data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTI4IDEy
 
       const lcEl = document.getElementById('lc-count');
       countUp(document.getElementById('hk-count'), 7, 1400);
+      // an exact figure, so no "+"
+      countUp(document.getElementById('cert-count'), 2, 1200, '');
       layoutRing();
 
       // The ring traces the card's own outline. Sizing the viewBox to the
