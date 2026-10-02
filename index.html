@@ -473,14 +473,20 @@
     .card:hover .card__inner{transform:rotateY(180deg)}
     .card:hover .card__face::before{opacity:1}
 
+    /* Goes near-opaque in focus. At rest the glass sits over the page, but in
+       focus its backdrop is the dimmed veil -- translucent against that reads
+       as a smudge, not a lifted card. The hue stays as a tint over a solid
+       base, so the card is crisp and still its own colour. */
     .card:hover .card__face{
       border-color:rgba(var(--glow),.34);
-      background:rgba(var(--glow),.07);
+      background:
+        linear-gradient(170deg, rgba(var(--glow),.13), rgba(var(--glow),.035) 60%),
+        rgba(15,16,19,.95);
       box-shadow:
-        0 0 0 1px rgba(var(--glow),.16),
-        0 16px 44px rgba(var(--glow),.20),
-        0 44px 120px rgba(var(--glow),.16),
-        0 30px 90px rgba(0,0,0,.6);
+        0 0 0 1px rgba(var(--glow),.18),
+        0 16px 44px rgba(var(--glow),.22),
+        0 48px 130px rgba(var(--glow),.18),
+        0 30px 90px rgba(0,0,0,.65);
     }
   }
 
