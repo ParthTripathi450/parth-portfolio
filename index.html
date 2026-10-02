@@ -101,12 +101,12 @@
   }
 
   .nav__links{display:flex;align-items:center;gap:34px;font-size:11.5px;font-weight:300;letter-spacing:.2em;color:var(--nav-ink)}
-  .nav__links a{position:relative;padding-block:4px;transition:color .18s ease}
+  .nav__links a{position:relative;padding-block:4px;transition:color .18s ease, text-shadow .18s ease}
   .nav__links a::after{
     content:"";position:absolute;left:0;bottom:0;height:1px;width:0;
     background:currentColor;transition:width .25s ease;
   }
-  .nav__links a:hover{color:var(--warm-ink)}
+  .nav__links a:hover{color:var(--warm-ink);text-shadow:0 0 12px rgba(255,214,160,.30)}
   .nav__links a:hover::after{width:100%}
 
   .nav__right{display:flex;align-items:center;gap:26px;margin-left:auto}
@@ -201,7 +201,7 @@
   .ltr{transition:color .16s ease, text-shadow .16s ease}
   .ltr:hover{
     color:var(--warm-ink);
-    text-shadow:0 0 14px rgba(255,214,160,.32);
+    text-shadow:0 0 16px rgba(255,214,160,.40), 0 0 4px rgba(255,214,160,.28);
   }
   /* the headline paints through background-clip:text, so its fill colour is
      -webkit-text-fill-color and plain `color` would be ignored */
@@ -209,7 +209,10 @@
   h1 .ltr:hover{
     -webkit-text-fill-color:var(--warm-ink);
     color:var(--warm-ink);
+    text-shadow:0 0 22px rgba(255,214,160,.38);
   }
+  /* the big figures deserve a wider halo than body copy */
+  .stat__num .ltr:hover{text-shadow:0 0 26px rgba(255,214,160,.42), 0 0 6px rgba(255,214,160,.3)}
 
   .sub{
     font-weight:300;
@@ -234,8 +237,8 @@
     box-shadow:0 10px 28px var(--warm-glow);
     transform:translateY(-1px);
   }
-  .link{color:#cfcfcf;font-size:11.5px;font-weight:300;letter-spacing:.16em;text-transform:uppercase;display:inline-flex;align-items:center;gap:8px}
-  .link:hover{color:var(--warm-ink)}
+  .link{color:#cfcfcf;font-size:11.5px;font-weight:300;letter-spacing:.16em;text-transform:uppercase;display:inline-flex;align-items:center;gap:8px;transition:color .2s ease, text-shadow .2s ease}
+  .link:hover{color:var(--warm-ink);text-shadow:0 0 12px rgba(255,214,160,.30)}
 
   .stage{
     position:relative;z-index:1;flex:0 0 auto;
@@ -847,7 +850,7 @@ const ICONS = {"cpp":"data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTI4IDEy
     });
   }
 
-  document.querySelectorAll('.sub, h2, .lede').forEach(splitLetters);
+  document.querySelectorAll('.sub, h2, .lede, .stat__label, .bar > span').forEach(splitLetters);
 
   /* ---------------- typewriter ---------------- */
   const TYPE_TEXT = "hey! i'm Parth";
@@ -917,13 +920,23 @@ const ICONS = {"cpp":"data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTI4IDEy
   ];
 
   function countUp(el, target, ms, suffix = '+') {
+    // written as spans so each digit is its own hover target, same as the copy
+    const paint = text => {
+      el.textContent = '';
+      for (const ch of text) {
+        const sp = document.createElement('span');
+        sp.className = 'ltr';
+        sp.textContent = ch;
+        el.appendChild(sp);
+      }
+    };
     const t0 = performance.now();
     const step = now => {
       const p = Math.min((now - t0) / ms, 1);
       const eased = 1 - Math.pow(1 - p, 3);
-      el.textContent = Math.floor(eased * target) + suffix;
+      paint(Math.floor(eased * target) + suffix);
       if (p < 1) requestAnimationFrame(step);
-      else el.textContent = target + suffix;
+      else paint(target + suffix);
     };
     requestAnimationFrame(step);
   }
