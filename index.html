@@ -357,7 +357,6 @@
      front without the cell collapsing. */
   .card{
     position:relative;
-    perspective:1600px;
     transition:transform .35s cubic-bezier(.16,1,.3,1);
   }
   .card__inner{
@@ -420,7 +419,9 @@
   .card__backbody .card__desc{margin-bottom:18px}
 
   /* flown to the front */
-  .card.is-front{z-index:70}
+  /* no transform and no perspective on the cell while its inner box is flown,
+     or either would re-anchor that fixed element back to this cell */
+  .card.is-front{z-index:70;transform:none;perspective:none}
   .card.is-front .card__inner{
     position:fixed;
     z-index:70;
@@ -958,8 +959,10 @@ const ICONS = {"cpp":"data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTI4IDEy
         void inner.offsetWidth;                   // commit the start state
 
         const t = target(r);
+        // perspective() leads the list so the flip has depth without putting a
+        // `perspective` property on an ancestor
         inner.style.transform =
-          `translate(${t.tx}px, ${t.ty}px) scale(${t.scale}) rotateY(180deg)`;
+          `perspective(1600px) translate(${t.tx}px, ${t.ty}px) scale(${t.scale}) rotateY(180deg)`;
         veil.classList.add('on');
 
         box = { x: (innerWidth - t.w) / 2, y: (innerHeight - t.h) / 2, w: t.w, h: t.h };
