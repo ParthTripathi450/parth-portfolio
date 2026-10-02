@@ -1282,18 +1282,25 @@ const ICONS = {"cpp":"data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTI4IDEy
       const dx  = Math.cos(angle) * dist;
       const dy  = Math.sin(angle) * dist;
 
+      const dur = rand(LIFE[0], LIFE[1]);
       const anim = el.animate([
         { transform: `translate3d(0,0,0) ${rot}`,           opacity: 0 },
         { offset: 0.12,                                      opacity: 0.85 },
         { offset: 0.70,                                      opacity: 0.7  },
         { transform: `translate3d(${dx}px,${dy}px,0) ${rot}`, opacity: 0 },
       ], {
-        duration: rand(LIFE[0], LIFE[1]),
+        duration: dur,
         easing: 'cubic-bezier(.22,.5,.35,1)',               // quick, then eases out
         fill: 'forwards',
       });
 
-      anim.onfinish = anim.oncancel = () => { el.remove(); aloft = false; };
+      // onfinish alone is not enough: animations pause while the tab is hidden,
+      // so a star that leaves mid-flight would never finish, never clean up,
+      // and `aloft` would stay true -- blocking every later star. The timeout
+      // guarantees release. Both paths are idempotent.
+      const land = () => { el.remove(); aloft = false; };
+      anim.onfinish = anim.oncancel = land;
+      setTimeout(land, dur + 700);
     }
 
     const schedule = () => { timer = setTimeout(() => { fly(); schedule(); }, rand(GAP[0], GAP[1])); };
@@ -1305,7 +1312,12 @@ const ICONS = {"cpp":"data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTI4IDEy
       layer.querySelectorAll('.shot').forEach(e => e.remove());
     });
     document.addEventListener('visibilitychange', () => {
-      if (document.hidden) { clearTimeout(timer); } else { clearTimeout(timer); schedule(); }
+      clearTimeout(timer);
+      if (document.hidden) return;
+      // anything stranded by the tab going away is cleared before resuming
+      layer.querySelectorAll('.shot').forEach(e => e.remove());
+      aloft = false;
+      schedule();
     });
   })();
 
