@@ -106,7 +106,7 @@
     content:"";position:absolute;left:0;bottom:0;height:1px;width:0;
     background:currentColor;transition:width .25s ease;
   }
-  .nav__links a:hover{color:#fff}
+  .nav__links a:hover{color:var(--warm-ink)}
   .nav__links a:hover::after{width:100%}
 
   .nav__right{display:flex;align-items:center;gap:26px;margin-left:auto}
@@ -195,6 +195,22 @@
   }
   @keyframes blink{50%{opacity:0}}
 
+  /* One span per character, so the hover target is the letter rather than the
+     line. Spaces stay as bare text nodes -- wrapping them too would stop the
+     browser breaking lines at them. */
+  .ltr{transition:color .16s ease, text-shadow .16s ease}
+  .ltr:hover{
+    color:var(--warm-ink);
+    text-shadow:0 0 14px rgba(255,214,160,.32);
+  }
+  /* the headline paints through background-clip:text, so its fill colour is
+     -webkit-text-fill-color and plain `color` would be ignored */
+  h1 .ltr{transition:-webkit-text-fill-color .16s ease, text-shadow .16s ease}
+  h1 .ltr:hover{
+    -webkit-text-fill-color:var(--warm-ink);
+    color:var(--warm-ink);
+  }
+
   .sub{
     font-weight:300;
     margin:0 0 32px;
@@ -219,7 +235,7 @@
     transform:translateY(-1px);
   }
   .link{color:#cfcfcf;font-size:11.5px;font-weight:300;letter-spacing:.16em;text-transform:uppercase;display:inline-flex;align-items:center;gap:8px}
-  .link:hover{color:#fff}
+  .link:hover{color:var(--warm-ink)}
 
   .stage{
     position:relative;z-index:1;flex:0 0 auto;
@@ -710,6 +726,33 @@ const ICONS = {"cpp":"data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTI4IDEy
     supabase:'#3ECF8E',
   };
 
+  /* ---------------- per-letter hover ---------------- */
+  // Wraps every visible character of an element in its own span. Spaces are
+  // left as plain text nodes: if they were spans too, the line could no longer
+  // break at them and long paragraphs would overflow.
+  function splitLetters(root) {
+    if (!root || root.dataset.split) return;
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    const texts = [];
+    while (walker.nextNode()) texts.push(walker.currentNode);
+
+    for (const node of texts) {
+      const frag = document.createDocumentFragment();
+      for (const ch of node.nodeValue) {
+        if (ch === ' ' || ch === '\n' || ch === '\t') {
+          frag.appendChild(document.createTextNode(ch));
+          continue;
+        }
+        const sp = document.createElement('span');
+        sp.className = 'ltr';
+        sp.textContent = ch;
+        frag.appendChild(sp);
+      }
+      node.parentNode.replaceChild(frag, node);
+    }
+    root.dataset.split = '1';
+  }
+
   /* ---------------- tech marquee ---------------- */
   const track = document.getElementById('track');
   const techbar = document.querySelector('.techbar');
@@ -792,6 +835,8 @@ const ICONS = {"cpp":"data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTI4IDEy
         </div>
       </article>`).join('');
 
+    grid.querySelectorAll('.card__title, .card__desc').forEach(splitLetters);
+
     // pointer-tracked sheen
     grid.querySelectorAll('.card').forEach(card => {
       card.addEventListener('pointermove', e => {
@@ -802,6 +847,8 @@ const ICONS = {"cpp":"data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTI4IDEy
     });
   }
 
+  document.querySelectorAll('.sub, h2, .lede').forEach(splitLetters);
+
   /* ---------------- typewriter ---------------- */
   const TYPE_TEXT = "hey! i'm Parth";
   const typeEl = document.getElementById('type');
@@ -809,9 +856,20 @@ const ICONS = {"cpp":"data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTI4IDEy
     // Deletion stops at the greeting so the headline is never blank -- only
     // the name retypes.
     const KEEP = TYPE_TEXT.indexOf('Parth');
+    // rebuilt each tick as spans, so the headline is hoverable per letter too
+    const render = n => {
+      typeEl.textContent = '';
+      for (const ch of TYPE_TEXT.slice(0, n)) {
+        if (ch === ' ') { typeEl.appendChild(document.createTextNode(ch)); continue; }
+        const sp = document.createElement('span');
+        sp.className = 'ltr';
+        sp.textContent = ch;
+        typeEl.appendChild(sp);
+      }
+    };
     let i = 0, forward = true;
     const tick = () => {
-      typeEl.textContent = TYPE_TEXT.slice(0, i);
+      render(i);
       if (forward) {
         if (i < TYPE_TEXT.length) { i++; setTimeout(tick, 95); }
         else { forward = false; setTimeout(tick, 2600); }
@@ -823,6 +881,7 @@ const ICONS = {"cpp":"data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTI4IDEy
     setTimeout(tick, 600);
   } else if (typeEl) {
     typeEl.textContent = TYPE_TEXT;
+    splitLetters(typeEl);
   }
 
   /* ---------------- reveal on scroll ---------------- */
