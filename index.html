@@ -44,7 +44,9 @@
   ::selection{background:rgba(255,255,255,.16)}
 
   .shell{max-width:var(--shell);margin:0 auto;padding-inline:clamp(20px,5vw,88px)}
-  main{position:relative;z-index:1}
+  /* no z-index: a stacking context here would trap the focused card
+     beneath the blur veil, which sits at the root level */
+  main{position:relative}
 
   /* ---------- navigation ---------- */
   .nav{
@@ -352,24 +354,40 @@
     grid-template-columns:repeat(auto-fit,minmax(330px,1fr));
     gap:26px;margin-top:44px;
   }
-  /* `.card` is now only the grid cell and the 3D stage. Everything visual
-     lives on the faces, so the inner box can be detached and flown to the
-     front without the cell collapsing. */
+  /* Each card owns its glow colour as raw channels, so every focus state --
+     spill, rim, shadow -- is the card's own hue at different strengths rather
+     than one shared highlight. */
+  .card--blue  {--glow: 92,148,214}
+  .card--purple{--glow:160,110,205}
+  .card--white {--glow:226,226,222}
+  .card--teal  {--glow: 90,190,170}
+  .card--amber {--glow:214,164,86}
+  .card--violet{--glow:150,116,230}
+  .card--indigo{--glow:104,120,222}
+
   .card{
     position:relative;
-    display:flex;                 /* lets the inner fill the cell without a % */
-    transition:transform .35s cubic-bezier(.16,1,.3,1);
+    display:flex;
+    perspective:1700px;
+    transition:transform .6s cubic-bezier(.19,1,.22,1);
+  }
+  /* ambient spill: the card's colour bleeding into the space around it */
+  .card::after{
+    content:"";
+    position:absolute;inset:-16%;
+    z-index:-1;
+    border-radius:34px;
+    background:radial-gradient(closest-side, rgba(var(--glow,255,255,255),.30), transparent 72%);
+    opacity:0;
+    transition:opacity .6s ease;
+    pointer-events:none;
   }
   .card__inner{
     position:relative;
     display:flex;flex-direction:column;
-    /* fills the cell via flex, not min-height:100%. A percentage would resolve
-       against <body> once this is reparented for the flight, stretching the
-       panel to viewport height and tearing the content off the glass box. */
     flex:1 1 auto;
     transform-style:preserve-3d;
-    transition:transform .68s cubic-bezier(.19,1,.22,1), box-shadow .5s ease;
-    will-change:transform;
+    transition:transform .78s cubic-bezier(.22,1,.26,1);
   }
   .card__face{
     position:relative;
@@ -383,40 +401,49 @@
     overflow:hidden;
     backface-visibility:hidden;
     -webkit-backface-visibility:hidden;
-    transition:background .35s ease, border-color .35s ease, box-shadow .35s ease;
+    transition:background .45s ease, border-color .45s ease, box-shadow .55s ease;
   }
   /* the sheen that tracks the pointer */
   .card__face::before{
-    content:"";position:absolute;inset:0;pointer-events:none;
+    content:"";position:absolute;inset:0;pointer-events:none;z-index:2;
     background:radial-gradient(240px circle at var(--mx,50%) var(--my,0%), rgba(255,255,255,.09), transparent 62%);
     opacity:0;transition:opacity .35s ease;
   }
-  .card:hover .card__face::before{opacity:1}
-  .card:hover .card__face{border-color:rgba(255,255,255,.14)}
-  .card:hover:not(.is-front){transform:translateY(-4px)}
-
-  .card--blue:hover   .card__face{background:rgba(167,184,199,.085);box-shadow:0 20px 60px rgba(32,101,165,.16)}
-  .card--purple:hover .card__face{background:rgba(203,189,209,.085);box-shadow:0 20px 60px rgba(147,35,164,.16)}
-  .card--white:hover  .card__face{background:rgba(248,248,246,.075);box-shadow:0 20px 60px rgba(255,255,255,.09)}
-  .card--teal:hover   .card__face{background:rgba(160,205,196,.08); box-shadow:0 20px 60px rgba(28,150,128,.15)}
-  .card--amber:hover  .card__face{background:rgba(214,196,164,.08); box-shadow:0 20px 60px rgba(180,120,40,.15)}
-  .card--violet:hover .card__face{background:rgba(196,182,224,.085);box-shadow:0 20px 60px rgba(124,88,214,.17)}
-  .card--indigo:hover .card__face{background:rgba(166,178,222,.085);box-shadow:0 20px 60px rgba(58,72,190,.17)}
-
-  /* The reverse keeps the front's layout so the screenshot holds its 16:10
-     frame -- filling a portrait panel with `cover` crops it to a zoomed slice.
-     What the flip reveals is the same card lit up: full colour, brighter copy,
-     a solid link. */
   .card__face--back{
     position:absolute;inset:0;
     transform:rotateY(180deg);
-    background:rgba(255,255,255,.07);
-    border-color:rgba(255,255,255,.16);
+    justify-content:flex-start;
+    padding:22px 22px 24px;
   }
-  .card__face--back .card__shot img{filter:none;transform:none}
-  .card__face--back .card__title{color:#fff}
-  .card__face--back .card__desc{color:#c6c6c6}
-  .card__face--back .stack img{filter:none;opacity:1}
+  /* the project's own image kept as a theme wash rather than a cropped panel */
+  .card__wash{
+    position:absolute;inset:0;z-index:0;
+    background-size:cover;background-position:top center;
+    filter:blur(16px) saturate(.9);
+    opacity:.16;
+  }
+  .card__face--back > *:not(.card__wash){position:relative;z-index:1}
+  .card__face--back .card__title{margin:0 0 12px;color:#fff}
+  .card__long{
+    margin:0 0 16px;font-size:.86rem;font-weight:300;line-height:1.68;color:#c2c2c2;
+  }
+  .card__points{margin:0 0 18px;padding:0;list-style:none;display:grid;gap:7px}
+  .card__points li{
+    position:relative;padding-left:16px;
+    font-size:.79rem;font-weight:300;line-height:1.5;color:var(--muted);
+  }
+  .card__points li::before{
+    content:"";position:absolute;left:0;top:.52em;
+    width:5px;height:5px;border-radius:50%;
+    background:rgba(var(--glow),.85);
+  }
+  .card__chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 18px}
+  .card__chips span{
+    font-size:9px;font-weight:300;letter-spacing:.14em;text-transform:uppercase;
+    color:#cfcfcf;
+    border:1px solid rgba(var(--glow),.3);border-radius:999px;padding:4px 10px;
+  }
+  .card__face--back .card__foot{margin-top:auto}
   .card__face--back .live{
     color:#101013;background:#efe3cf;border-color:transparent;font-weight:400;
   }
@@ -424,22 +451,44 @@
     color:var(--muted);background:none;border-color:var(--hair);border-style:dashed;
   }
 
-  /* flown to the front */
-  .card.is-front{z-index:70}
-  .card.is-front .card__inner{
-    position:fixed;
-    z-index:70;
-    box-shadow:0 50px 120px rgba(0,0,0,.75);
-  }
-  .cardveil{
-    position:fixed;inset:0;z-index:65;
-    background:rgba(6,7,9,.66);
-    backdrop-filter:blur(3px);
-    -webkit-backdrop-filter:blur(3px);
+  /* ---- the blur veil, driven purely by :has() ---- */
+  .focusveil{
+    position:fixed;inset:0;z-index:50;
+    background:rgba(8,9,11,.5);
+    backdrop-filter:blur(7px) saturate(.85);
+    -webkit-backdrop-filter:blur(7px) saturate(.85);
     opacity:0;pointer-events:none;
-    transition:opacity .5s ease;
+    transition:opacity .55s ease;
   }
-  .cardveil.on{opacity:1}
+
+  @media (hover:hover) and (pointer:fine){
+    body:has(.card:hover) .focusveil{opacity:1}
+
+    /* lifted, and above the veil -- its cell never moves, so nothing reflows */
+    .card:hover{
+      z-index:60;
+      transform:translateY(-10px) scale(1.045);
+    }
+    .card:hover::after{opacity:1}
+    .card:hover .card__inner{transform:rotateY(180deg)}
+    .card:hover .card__face::before{opacity:1}
+
+    .card:hover .card__face{
+      border-color:rgba(var(--glow),.34);
+      background:rgba(var(--glow),.07);
+      box-shadow:
+        0 0 0 1px rgba(var(--glow),.16),
+        0 16px 44px rgba(var(--glow),.20),
+        0 44px 120px rgba(var(--glow),.16),
+        0 30px 90px rgba(0,0,0,.6);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .card:hover{transform:none}
+    .card:hover .card__inner{transform:none}
+    .focusveil{display:none}
+  }
 
   .card__shot{
     position:relative;width:100%;aspect-ratio:16/10;
@@ -602,6 +651,8 @@
 </head>
 <body>
 
+<div class="focusveil" aria-hidden="true"></div>
+
 <div class="ambient" aria-hidden="true">
   <canvas id="dust"></canvas>
   <div class="sweep sweep--a"></div>
@@ -736,6 +787,10 @@ const ICONS = {"cpp":"data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTI4IDEy
       url: 'https://resonance-nine-omega.vercel.app/',
       stack: [],
       tone: 'violet',
+      long: 'Paste or type a script, choose a voice from the library or clone one of your own, and the platform renders it as speech. The dashboard is organised around the job you came to do rather than the model doing it.',
+      points: ['Text-to-speech with a per-render character budget',
+               'Voice cloning alongside a browsable voice library',
+               'Presets for narration, ads, film dialogue, game characters, podcasts and meditation'],
     },
     {
       title: 'Agentic Commerce',
@@ -745,6 +800,10 @@ const ICONS = {"cpp":"data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTI4IDEy
       stack: [],
       note: 'In development',
       tone: 'indigo',
+      long: 'A storefront whose customer is an agent rather than a person. You describe what you want in plain language; the agent reads every merchant\'s machine-readable catalogue, ranks what it finds against published criteria, and tells you why it chose one listing over the others.',
+      points: ['Natural-language search, or hand the purchase to the agent outright',
+               'Ranking shown against published criteria, with the reasoning exposed',
+               'Marketplace view ordered by units actually sold, not by promotion'],
     },
     {
       title: '3D e-commerce keyboard store',
@@ -753,6 +812,10 @@ const ICONS = {"cpp":"data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTI4IDEy
       url: 'https://keyboard-dusky-pi.vercel.app/',
       stack: ['nextjs', 'typescript', 'threejs', 'tailwind'],
       tone: 'blue',
+      long: 'A storefront for a fictional keyboard brand, Nimbus, built around a real-time 3D product view instead of a gallery of stills. The model carries the page the way photography usually would.',
+      points: ['Three.js product rendering in the browser',
+               'Next.js and TypeScript throughout',
+               'Marketing layout built around the 3D piece rather than beside it'],
     },
     {
       title: 'Post, connect, and join the vibe',
@@ -761,6 +824,10 @@ const ICONS = {"cpp":"data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTI4IDEy
       url: 'https://social-media2-xi.vercel.app/',
       stack: ['react', 'tailwind', 'supabase', 'typescript'],
       tone: 'purple',
+      long: 'A social app with the usual pieces done properly: accounts, a post feed, direct conversations, and communities people can join or start themselves.',
+      points: ['Accounts and auth on Supabase',
+               'Post feed, chat, and user-created communities',
+               'React and TypeScript on the front end'],
     },
     {
       title: 'Researcher website — freelance',
@@ -769,6 +836,10 @@ const ICONS = {"cpp":"data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTI4IDEy
       url: 'https://next-sanity-2brg.vercel.app/',
       stack: ['react', 'typescript', 'sanity', 'tailwind'],
       tone: 'white',
+      long: 'A freelance commission: a personal site for a researcher to publish work, papers, blog posts and writing, and to be findable by the people who care about it.',
+      points: ['Sanity as the CMS, so the client publishes without a developer',
+               'Separate surfaces for publications, blog posts and long-form writing',
+               'Built to be read first -- typography over ornament'],
     },
     {
       title: 'Talk. Draw. Connect.',
@@ -777,6 +848,10 @@ const ICONS = {"cpp":"data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTI4IDEy
       url: 'https://audio-rooms.vercel.app/',
       stack: ['html5', 'react', 'tailwind', 'python'],
       tone: 'teal',
+      long: 'Rooms you can drop into, talk in, and draw on together. The canvas and the conversation update for everyone at once, so the drawing is something the room makes rather than something one person submits.',
+      points: ['Rooms with live chat',
+               'Shared canvas drawn on collaboratively in real time',
+               'Python service behind a React front end'],
     },
     {
       title: 'Shadow Tic-Tac-Toe',
@@ -785,6 +860,10 @@ const ICONS = {"cpp":"data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTI4IDEy
       url: 'https://shadow-tictactoe.vercel.app/',
       stack: ['vite', 'react', 'tailwind'],
       tone: 'amber',
+      long: 'Tic-tac-toe with one rule changed: every fourth move, your oldest mark fades out. The board never fills, so you cannot grind to a draw -- you have to think about which of your marks you are about to lose.',
+      points: ['Your oldest mark disappears on every fourth move',
+               'Draws are effectively impossible, so play stays aggressive',
+               'React on Vite'],
     },
   ];
 
@@ -908,118 +987,19 @@ const ICONS = {"cpp":"data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTI4IDEy
             <div class="card__foot">${foot(p)}</div>
           </div>
           <div class="card__face card__face--back" aria-hidden="true">
-            <div class="card__shot"><img src="${p.shot}" alt="" loading="lazy"></div>
+            <div class="card__wash" style="background-image:url('${p.shot}')"></div>
             <h3 class="card__title">${p.title}</h3>
-            <p class="card__desc">${p.desc}</p>
+            <p class="card__long">${p.long || p.desc}</p>
+            ${(p.points || []).length
+              ? `<ul class="card__points">${p.points.map(x => `<li>${x}</li>`).join('')}</ul>` : ''}
+            ${(p.stack || []).length
+              ? `<div class="card__chips">${p.stack.map(x => `<span>${x}</span>`).join('')}</div>` : ''}
             <div class="card__foot">${foot(p)}</div>
           </div>
         </div>
       </article>`).join('');
 
     grid.querySelectorAll('.card__title, .card__desc').forEach(splitLetters);
-
-    /* ---- hover a card to fly it to the front ----------------------------
-       The inner box detaches to position:fixed and flips. The cell keeps its
-       height so the grid does not reflow around the gap, and dismissal is
-       driven by hit-testing the pointer against the flown card's own rect --
-       a pointerleave on the card would fire the instant it moves away from
-       under the cursor and the thing would flap. */
-    if (!matchMedia('(prefers-reduced-motion: reduce)').matches
-        && matchMedia('(pointer: fine)').matches) {
-
-      const veil = document.createElement('div');
-      veil.className = 'cardveil';
-      document.body.appendChild(veil);
-
-      let open = null, hoverTimer = 0, settleAt = 0, box = null;
-
-      const target = r => {
-        const vw = innerWidth, vh = innerHeight;
-        // leave real margin: at 0.84 of viewport height a tall card fills the
-        // screen edge to edge and stops reading as "brought forward"
-        const scale = Math.min(1.34, (vh * 0.74) / r.height, (vw * 0.8) / r.width);
-        return {
-          scale,
-          tx: (vw - r.width) / 2 - r.left,
-          ty: (vh - r.height) / 2 - r.top,
-          w: r.width * scale,
-          h: r.height * scale,
-        };
-      };
-
-      function promote(card) {
-        if (open) return;
-        const inner = card.querySelector('.card__inner');
-        const r = inner.getBoundingClientRect();
-
-        card.style.height = r.height + 'px';     // hold the cell open
-        Object.assign(inner.style, {
-          position: 'fixed',
-          left: r.left + 'px', top: r.top + 'px',
-          width: r.width + 'px', height: r.height + 'px',
-          margin: '0',
-        });
-        // Reparent to <body>. Any ancestor with a transform, perspective or
-        // filter becomes the containing block for a fixed child -- and the
-        // reveal transition leaves `.card` at an identity matrix, which still
-        // counts as "not none". Hoisting it out sidesteps the whole class of
-        // problem instead of trying to keep every ancestor clean.
-        document.body.appendChild(inner);
-        card.classList.add('is-front');
-        void inner.offsetWidth;                   // commit the start state
-
-        const t = target(r);
-        // perspective() leads the list so the flip has depth without putting a
-        // `perspective` property on an ancestor
-        inner.style.transform =
-          `perspective(1600px) translate(${t.tx}px, ${t.ty}px) scale(${t.scale}) rotateY(180deg)`;
-        veil.classList.add('on');
-
-        box = { x: (innerWidth - t.w) / 2, y: (innerHeight - t.h) / 2, w: t.w, h: t.h };
-        settleAt = performance.now() + 420;       // grace while it is in flight
-        open = { card, inner };
-      }
-
-      function demote() {
-        if (!open) return;
-        const { card, inner } = open;
-        open = null;
-        inner.style.transform = '';
-        veil.classList.remove('on');
-
-        const done = () => {
-          if (inner.parentElement !== card) card.appendChild(inner);
-          inner.removeAttribute('style');
-          card.style.height = '';
-          card.classList.remove('is-front');
-          inner.removeEventListener('transitionend', done);
-        };
-        inner.addEventListener('transitionend', done);
-        setTimeout(done, 820);                    // in case transitionend is missed
-      }
-
-      grid.querySelectorAll('.card').forEach(card => {
-        card.addEventListener('pointerenter', () => {
-          if (open) return;
-          clearTimeout(hoverTimer);
-          hoverTimer = setTimeout(() => promote(card), 170);   // intent delay
-        });
-        card.addEventListener('pointerleave', () => clearTimeout(hoverTimer));
-      });
-
-      addEventListener('pointermove', e => {
-        if (!open || !box || performance.now() < settleAt) return;
-        const pad = 48;
-        const outside = e.clientX < box.x - pad || e.clientX > box.x + box.w + pad
-                     || e.clientY < box.y - pad || e.clientY > box.y + box.h + pad;
-        if (outside) demote();
-      }, { passive: true });
-
-      addEventListener('scroll', () => { clearTimeout(hoverTimer); demote(); }, { passive: true });
-      addEventListener('keydown', e => { if (e.key === 'Escape') demote(); });
-      addEventListener('resize', demote);
-      veil.addEventListener('pointerdown', demote);
-    }
 
     // pointer-tracked sheen
     grid.querySelectorAll('.card').forEach(card => {
