@@ -399,24 +399,26 @@
   .card--violet:hover .card__face{background:rgba(196,182,224,.085);box-shadow:0 20px 60px rgba(124,88,214,.17)}
   .card--indigo:hover .card__face{background:rgba(166,178,222,.085);box-shadow:0 20px 60px rgba(58,72,190,.17)}
 
-  /* the reverse: the shot filling the panel, with the detail over a scrim */
+  /* The reverse keeps the front's layout so the screenshot holds its 16:10
+     frame -- filling a portrait panel with `cover` crops it to a zoomed slice.
+     What the flip reveals is the same card lit up: full colour, brighter copy,
+     a solid link. */
   .card__face--back{
     position:absolute;inset:0;
     transform:rotateY(180deg);
-    padding:0;
-    justify-content:flex-end;
+    background:rgba(255,255,255,.07);
+    border-color:rgba(255,255,255,.16);
   }
-  .card__backshot{
-    position:absolute;inset:0;
-    background-size:cover;background-position:center;
-    filter:saturate(.85) contrast(1.02);
+  .card__face--back .card__shot img{filter:none;transform:none}
+  .card__face--back .card__title{color:#fff}
+  .card__face--back .card__desc{color:#c6c6c6}
+  .card__face--back .stack img{filter:none;opacity:1}
+  .card__face--back .live{
+    color:#101013;background:#efe3cf;border-color:transparent;font-weight:400;
   }
-  .card__backshot::after{
-    content:"";position:absolute;inset:0;
-    background:linear-gradient(180deg, rgba(10,10,12,.25) 0%, rgba(10,10,12,.82) 52%, rgba(10,10,12,.95) 100%);
+  .card__face--back .live--quiet{
+    color:var(--muted);background:none;border-color:var(--hair);border-style:dashed;
   }
-  .card__backbody{position:relative;padding:22px 22px 24px}
-  .card__backbody .card__desc{margin-bottom:18px}
 
   /* flown to the front */
   .card.is-front{z-index:70}
@@ -902,12 +904,10 @@ const ICONS = {"cpp":"data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTI4IDEy
             <div class="card__foot">${foot(p)}</div>
           </div>
           <div class="card__face card__face--back" aria-hidden="true">
-            <div class="card__backshot" style="background-image:url('${p.shot}')"></div>
-            <div class="card__backbody">
-              <h3 class="card__title">${p.title}</h3>
-              <p class="card__desc">${p.desc}</p>
-              <div class="card__foot">${foot(p)}</div>
-            </div>
+            <div class="card__shot"><img src="${p.shot}" alt="" loading="lazy"></div>
+            <h3 class="card__title">${p.title}</h3>
+            <p class="card__desc">${p.desc}</p>
+            <div class="card__foot">${foot(p)}</div>
           </div>
         </div>
       </article>`).join('');
