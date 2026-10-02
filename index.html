@@ -19,6 +19,9 @@
     --nav-ink:#d9d9d9;
     --hair:rgba(255,255,255,.09);
     --glass:rgba(255,255,255,.045);
+    /* the focused card must outrank the veil; kept together so they cannot drift */
+    --z-veil:50;
+    --z-focus:120;
     /* warm lift, used only by the two action buttons */
     --warm-ink:#f3e1c8;
     --warm-fill:rgba(255,226,186,.07);
@@ -453,7 +456,7 @@
 
   /* ---- the blur veil, driven purely by :has() ---- */
   .focusveil{
-    position:fixed;inset:0;z-index:50;
+    position:fixed;inset:0;z-index:var(--z-veil);
     background:rgba(8,9,11,.5);
     backdrop-filter:blur(7px) saturate(.85);
     -webkit-backdrop-filter:blur(7px) saturate(.85);
@@ -466,7 +469,7 @@
 
     /* lifted, and above the veil -- its cell never moves, so nothing reflows */
     .card:hover{
-      z-index:60;
+      z-index:var(--z-focus);
       transform:translateY(-10px) scale(1.045);
     }
     .card:hover::after{opacity:1}
