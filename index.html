@@ -419,9 +419,7 @@
   .card__backbody .card__desc{margin-bottom:18px}
 
   /* flown to the front */
-  /* no transform and no perspective on the cell while its inner box is flown,
-     or either would re-anchor that fixed element back to this cell */
-  .card.is-front{z-index:70;transform:none;perspective:none}
+  .card.is-front{z-index:70}
   .card.is-front .card__inner{
     position:fixed;
     z-index:70;
@@ -955,6 +953,12 @@ const ICONS = {"cpp":"data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTI4IDEy
           width: r.width + 'px', height: r.height + 'px',
           margin: '0',
         });
+        // Reparent to <body>. Any ancestor with a transform, perspective or
+        // filter becomes the containing block for a fixed child -- and the
+        // reveal transition leaves `.card` at an identity matrix, which still
+        // counts as "not none". Hoisting it out sidesteps the whole class of
+        // problem instead of trying to keep every ancestor clean.
+        document.body.appendChild(inner);
         card.classList.add('is-front');
         void inner.offsetWidth;                   // commit the start state
 
@@ -978,6 +982,7 @@ const ICONS = {"cpp":"data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTI4IDEy
         veil.classList.remove('on');
 
         const done = () => {
+          if (inner.parentElement !== card) card.appendChild(inner);
           inner.removeAttribute('style');
           card.style.height = '';
           card.classList.remove('is-front');
